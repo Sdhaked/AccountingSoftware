@@ -1,0 +1,196 @@
+<?php
+
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
+use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\Pages\AboutController;
+use App\Http\Controllers\Admin\Pages\ContactController;
+use App\Http\Controllers\Admin\Pages\EventArchiveController;
+use App\Http\Controllers\Admin\Pages\HomeController;
+use App\Http\Controllers\Admin\Pages\PolicyController;
+use App\Http\Controllers\Admin\Pages\TermsController;
+use App\Http\Controllers\Admin\Pages\TicketsController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\Slider\HeroSliderController;
+use App\Http\Controllers\Admin\Slider\InfoSliderController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Website\AboutController as WebsiteAboutController;
+use App\Http\Controllers\Website\BaseController;
+use App\Http\Controllers\Website\ContactController as WebsiteContactController;
+use App\Http\Controllers\Website\HomeController as WebsiteHomeController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('website.csrf_token');
+
+/**
+ * Admin guest routes
+ */
+Route::prefix('admin')->controller(AuthController::class)->middleware('guest')->group(function () {
+    Route::get('/login', 'login')->name('login');
+    Route::get('/forgot-password', 'forgotPassword')->name('forgot.password');
+    Route::get('/set-new-password', 'setNewPassword')->name('set.new.password');
+
+    Route::post('/login', 'loginPost')->name('login.post');
+    Route::post('/login/send-otp', 'sendLoginOtp')->name('login.otp.send');
+    Route::post('/logout', 'logoutPost')->name('logout');
+
+    Route::post('/forgot-password', 'sendResetLink')->name('password.email');
+    Route::post('/reset-password', 'reset')->name('password.reset');
+});
+
+/**
+ * Admin Routes
+ */
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::delete('/media/{target}/{id?}', [MediaController::class, 'destroy'])
+        ->name('admin.media.destroy');
+
+    Route::controller(AuthController::class)->group(function () {
+        Route::post('/logout', 'logout')->name('logout');
+        Route::get('/profile', 'profile')->name('profile');
+        Route::get('/profile/edit', 'editProfile')->name('profile.edit');
+        Route::post('/profile/update', 'updateProfile')->name('profile.update');
+    });
+
+    /**
+     * Dashboard
+     */
+    Route::controller(DashboardController::class)->group(function () {
+        Route::get('/', 'index')->name('admin.dashboard.index');
+    });
+
+    /**
+     * Gallery
+     */
+    Route::controller(AdminGalleryController::class)->prefix('gallery')->group(function () {
+        Route::get('/', 'index')->name('admin.gallery.index');
+        Route::post('/', 'store')->name('admin.gallery.store');
+        Route::post('/{id}', 'update')->name('admin.gallery.update');
+        Route::delete('/{id}', 'destroy')->name('admin.gallery.destroy');
+    });
+
+    /**
+     * Settings
+     */
+    Route::controller(SettingController::class)->prefix('settings')->group(function () {
+        Route::get('/', 'index')->name('admin.settings.index');
+    });
+
+    /**
+     * Master Control
+     */
+    Route::prefix('master-control')->group(function () {
+        Route::controller(UserController::class)->prefix('users')->group(function () {
+            Route::get('/', 'index')->name('admin.users.index');
+            Route::get('/create', 'create')->name('admin.users.create');
+            Route::post('/store', 'store')->name('admin.users.store');
+            Route::get('/edit/{user}', 'edit')->name('admin.users.edit');
+            Route::post('/update/{user}', 'update')->name('admin.users.update');
+            Route::post('/activate/{id}', 'activate')->name('admin.users.activate');
+            Route::delete('/destroy/{user}', 'destroy')->name('admin.users.destroy');
+        });
+
+        Route::controller(RoleController::class)->prefix('roles')->group(function () {
+            Route::get('/', 'index')->name('admin.roles.index');
+            Route::get('/create', 'create')->name('admin.roles.create');
+            Route::post('/store', 'store')->name('admin.roles.store');
+            Route::get('/edit/{role}', 'edit')->name('admin.roles.edit');
+            Route::post('/update/{role}', 'update')->name('admin.roles.update');
+            Route::delete('/destroy/{role}', 'destroy')->name('admin.roles.destroy');
+        });
+
+        Route::controller(PermissionController::class)->prefix('permissions')->group(function () {
+            Route::get('/', 'index')->name('admin.permissions.index');
+            Route::get('/create', 'create')->name('admin.permissions.create');
+            Route::post('/store', 'store')->name('admin.permissions.store');
+            Route::get('/edit/{permission}', 'edit')->name('admin.permissions.edit');
+            Route::post('/update/{permission}', 'update')->name('admin.permissions.update');
+            Route::delete('/destroy/{permission}', 'destroy')->name('admin.permissions.destroy');
+        });
+    });
+
+    /**
+     * Pages
+     */
+    Route::prefix('pages')->middleware('auth')->group(function () {
+        Route::controller(HomeController::class)->prefix('home')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.home.index');
+            Route::post('/', 'store')->name('admin.pages.home.store');
+        });
+
+        Route::controller(AboutController::class)->prefix('about')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.about.index');
+            Route::post('/', 'store')->name('admin.pages.about.store');
+        });
+
+        Route::controller(ContactController::class)->prefix('contact')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.contact.index');
+            Route::post('/', 'store')->name('admin.pages.contact.store');
+        });
+
+        Route::controller(EventArchiveController::class)->prefix('event-archive')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.event_archive.index');
+            Route::post('/', 'store')->name('admin.pages.event_archive.store');
+        });
+
+        Route::controller(TicketsController::class)->prefix('tickets')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.tickets.index');
+            Route::post('/', 'store')->name('admin.pages.tickets.store');
+        });
+
+        Route::controller(TermsController::class)->prefix('terms')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.terms');
+            Route::post('/', 'store')->name('admin.pages.terms.store');
+        });
+
+        Route::controller(PolicyController::class)->prefix('policy')->group(function () {
+            Route::get('/', 'index')->name('admin.pages.policy');
+            Route::post('/', 'store')->name('admin.pages.policy.store');
+        });
+    });
+
+    /**
+     * Sliders
+     */
+    Route::prefix('sliders')->middleware('auth')->group(function () {
+        Route::controller(HeroSliderController::class)->prefix('hero')->group(function () {
+            Route::get('/', 'index')->name('admin.sliders.hero.index');
+            Route::post('/store', 'store')->name('admin.sliders.hero.store');
+            Route::post('/update/{id}', 'update')->name('admin.sliders.hero.update');
+            Route::delete('/destroy/{id}', 'destroy')->name('admin.sliders.hero.destroy');
+        });
+
+        Route::controller(InfoSliderController::class)->prefix('info')->group(function () {
+            Route::get('/', 'index')->name('admin.sliders.info.index');
+            Route::post('/store', 'store')->name('admin.sliders.info.store');
+            Route::post('/update/{id}', 'update')->name('admin.sliders.info.update');
+            Route::delete('/destroy/{id}', 'destroy')->name('admin.sliders.info.destroy');
+        });
+    });
+});
+
+/**
+ * Website Routes
+ */
+Route::controller(WebsiteHomeController::class)->group(function () {
+    Route::get('/', 'index')->name('website.home.index');
+    Route::get('/gallery/load-more', 'loadMoreGallery')->name('website.home.gallery.load_more');
+});
+
+Route::controller(WebsiteAboutController::class)->group(function () {
+    Route::get('/about', 'index')->name('website.about.index');
+});
+
+Route::controller(WebsiteContactController::class)->group(function () {
+    Route::get('/contact', 'index')->name('website.contact.index');
+});
+
+Route::controller(BaseController::class)->group(function () {
+    Route::get('/policy', 'policy')->name('website.policy');
+    Route::get('/terms-conditions', 'termsConditions')->name('website.terms.conditions');
+});
