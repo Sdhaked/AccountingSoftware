@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
-})->name('website.csrf_token');
+})->name('csrf_token');
 
 /**
  * Admin guest routes

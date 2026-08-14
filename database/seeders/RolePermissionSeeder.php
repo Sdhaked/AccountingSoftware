@@ -27,67 +27,6 @@ class RolePermissionSeeder extends Seeder
                 'Edit Profile',
                 'Change Profile Password',
             ]),
-            $this->permissionsFor('Page Content', [
-                'Manage Page Content',
-                'View Page Content',
-                'Edit Page Content',
-            ]),
-            $this->permissionsFor('Home Page Content', [
-                'Manage Home Page Content',
-                'View Home Page Content',
-                'Edit Home Page Content',
-            ]),
-            $this->permissionsFor('About Page Content', [
-                'Manage About Page Content',
-                'View About Page Content',
-                'Edit About Page Content',
-            ]),
-            $this->permissionsFor('Contact Page Content', [
-                'Manage Contact Page Content',
-                'View Contact Page Content',
-                'Edit Contact Page Content',
-            ]),
-            $this->permissionsFor('Event Archive Page Content', [
-                'Manage Event Archive Page Content',
-                'View Event Archive Page Content',
-                'Edit Event Archive Page Content',
-            ]),
-            $this->permissionsFor('Tickets Page Content', [
-                'Manage Tickets Page Content',
-                'View Tickets Page Content',
-                'Edit Tickets Page Content',
-            ]),
-            $this->permissionsFor('Terms Page Content', [
-                'Manage Terms Page Content',
-                'View Terms Page Content',
-                'Edit Terms Page Content',
-            ]),
-            $this->permissionsFor('Policy Page Content', [
-                'Manage Policy Page Content',
-                'View Policy Page Content',
-                'Edit Policy Page Content',
-            ]),
-            $this->permissionsFor('Main Hero Slider', [
-                'Manage Main Hero Slider',
-                'View Main Hero Slider',
-                'Create Main Hero Slider',
-                'Edit Main Hero Slider',
-                'Delete Main Hero Slider',
-            ]),
-            $this->permissionsFor('Main Info Slider', [
-                'Manage Main Info Slider',
-                'View Main Info Slider',
-                'Create Main Info Slider',
-                'Edit Main Info Slider',
-                'Delete Main Info Slider',
-            ]),
-            $this->permissionsFor('Main Gallery', [
-                'Manage Main Gallery',
-                'View Main Gallery',
-                'Create Main Gallery',
-                'Edit Main Gallery',
-                'Delete Main Gallery',
-            ]),
             $this->permissionsFor('Settings', [
                 'Manage Settings',
                 'View Settings',

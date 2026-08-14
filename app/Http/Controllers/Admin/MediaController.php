@@ -3,14 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AboutPageContent;
-use App\Models\ContactPageContent;
-use App\Models\EventArchivePageContent;
-use App\Models\Gallery;
-use App\Models\HomePageContent;
-use App\Models\PolicyPageContent;
-use App\Models\Slider;
-use App\Models\TermsPageContent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,24 +83,7 @@ class MediaController extends Controller
     private function resolveTarget(Request $request, string $target, ?int $id): array
     {
         return match ($target) {
-            'home-hero-video' => [HomePageContent::find(1), 'hero_video_path', false, 'Hero video'],
-            'home-about-image' => [HomePageContent::find(1), 'about_image_path', false, 'Home about image'],
-
-            'about-breadcrumb-image' => [AboutPageContent::find(1), 'breadcrumb_image_path', false, 'Breadcrumb image'],
-            'about-featured-image' => [AboutPageContent::find(1), 'about_featured_image_path', false, 'About featured image'],
-            'about-owner-image-1' => [AboutPageContent::find(1), 'owner_image_1_path', false, 'Owner image 1'],
-            'about-owner-image-2' => [AboutPageContent::find(1), 'owner_image_2_path', false, 'Owner image 2'],
-
-            'contact-breadcrumb-image' => [ContactPageContent::find(1), 'breadcrumb_image_path', false, 'Contact breadcrumb image'],
-            'policy-breadcrumb-image' => [PolicyPageContent::find(1), 'breadcrumb_image_path', false, 'Policy breadcrumb image'],
-            'terms-breadcrumb-image' => [TermsPageContent::find(1), 'breadcrumb_image_path', false, 'Terms breadcrumb image'],
-            'event-archive-breadcrumb-image' => [EventArchivePageContent::find(1), 'breadcrumb_image_path', false, 'Event archive breadcrumb image'],
-
             'profile-picture' => [$request->user(), 'profile_picture', false, 'Profile picture'],
-
-            'gallery-record' => [Gallery::find($id), 'image_path', true, 'Gallery image'],
-            'hero-slider-record' => [Slider::where('type', 1)->find($id), 'image', true, 'Hero slide'],
-            'info-slider-record' => [Slider::where('type', 2)->find($id), 'image', true, 'Info slide'],
             default => [null, '', false, 'Media'],
         };
     }
