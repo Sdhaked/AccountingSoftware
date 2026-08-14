@@ -1,7 +1,7 @@
 <?php
 
-test('the application returns a successful response', function () {
+test('the root URL opens the admin area', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('login'));
 });

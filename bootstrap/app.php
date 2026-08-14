@@ -42,6 +42,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return redirect()->route('website.home.index', ['not_found' => 1]);
+            return redirect()->route('admin.dashboard.index');
         });
     })->create();

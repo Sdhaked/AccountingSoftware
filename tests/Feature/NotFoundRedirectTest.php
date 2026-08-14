@@ -1,20 +1,12 @@
 <?php
 
-it('redirects browser 404 responses home with a notification', function () {
+it('redirects browser 404 responses to the admin dashboard', function () {
     $response = $this->get('/this-page-does-not-exist', [
         'Accept' => 'text/html',
         'Sec-Fetch-Dest' => 'document',
     ]);
 
-    $response->assertRedirect(route('website.home.index', ['not_found' => 1]));
-});
-
-it('renders the 404 notification in the website layout', function () {
-    request()->query->set('not_found', '1');
-
-    $this->view('layouts.website')
-        ->assertSee('data-site-notification', false)
-        ->assertSee('Page not found. You have been redirected to the home page.');
+    $response->assertRedirect(route('admin.dashboard.index'));
 });
 
 it('keeps API 404 responses as JSON', function () {
