@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AccountingTransactionItem extends Model
 {
     protected $fillable = [
-        'item_type', 'label', 'quantity', 'unit_price', 'tax_rate', 'subtotal', 'tax_amount', 'total',
+        'item_type', 'source_id', 'label_id', 'label', 'quantity', 'unit_price', 'tax_rate',
+        'subtotal', 'tax_amount', 'total',
     ];
 
     protected function casts(): array

@@ -2,13 +2,29 @@
 
 @php
     $isIncome = $type === 'income';
-    $sourceType = old('source_type', 'company');
-    $companyRows = old('company_items', [['kind' => 'product', 'source_id' => '', 'quantity' => 1]]);
-    $labelRows = old('items', [['label_id' => '', 'other_label' => '', 'quantity' => 1, 'price' => '']]);
+    $isEdit = isset($transaction);
+    $sourceType = old('source_type', $transaction->source_type ?? 'company');
+    $storedCompanyRows = $isEdit && $sourceType === 'company'
+        ? $transaction->items->map(fn ($item) => [
+            'kind' => $item->item_type,
+            'source_id' => $item->source_id,
+            'quantity' => $item->quantity,
+        ])->all()
+        : [];
+    $storedLabelRows = $isEdit && $sourceType === 'personal'
+        ? $transaction->items->map(fn ($item) => [
+            'label_id' => $item->item_type === 'other' ? 'other' : $item->label_id,
+            'other_label' => $item->item_type === 'other' ? $item->label : '',
+            'quantity' => $item->quantity,
+            'price' => $item->unit_price,
+        ])->all()
+        : [];
+    $companyRows = old('company_items', $storedCompanyRows ?: [['kind' => 'product', 'source_id' => '', 'quantity' => 1]]);
+    $labelRows = old('items', $storedLabelRows ?: [['label_id' => '', 'other_label' => '', 'quantity' => 1, 'price' => '']]);
 @endphp
 
 @section('head')
-    <title>Create {{ ucfirst($type) }} Entry</title>
+    <title>{{ $isEdit ? 'Edit' : 'Create' }} {{ ucfirst($type) }} Entry</title>
     @include('admin._partials.head.g-links')
     @include('admin._partials.head.g-css-files')
     @include('admin._partials.head.g-js-files')
@@ -21,14 +37,17 @@
     <section class="wrapper">
         <main class="dash-content">
             @include('admin._partials.breadcrumb')
-            <h4 class="hd-lg">Create {{ ucfirst($type) }} Entry</h4>
+            <h4 class="hd-lg">{{ $isEdit ? 'Edit' : 'Create' }} {{ ucfirst($type) }} Entry</h4>
 
-            <form action="{{ route('admin.transactions.store', $type) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ $isEdit ? route('admin.transactions.update', $transaction) : route('admin.transactions.store', $type) }}"
+                  method="POST" enctype="multipart/form-data">
                 @csrf
+                @if($isEdit) @method('PUT') @endif
                 <div class="grid-2 grid-sm-1 gap-card">
                     <div class="form-floating">
                         <input class="form-control @error('occurred_at') is-invalid @enderror" type="datetime-local"
-                               id="occurred_at" name="occurred_at" value="{{ old('occurred_at', now()->format('Y-m-d\TH:i')) }}" required>
+                               id="occurred_at" name="occurred_at"
+                               value="{{ old('occurred_at', $isEdit ? $transaction->occurred_at->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}" required>
                         <label for="occurred_at">Date & Time*</label>
                         @error('occurred_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
@@ -38,7 +57,8 @@
                             <select class="form-select @error('customer_id') is-invalid @enderror" id="transaction_customer" name="customer_id" required>
                                 <option value="">Select Customer</option>
                                 @foreach($customers as $customer)
-                                    <option value="{{ $customer->id }}" data-company="{{ $customer->company_id }}" @selected((int) old('customer_id') === $customer->id)>
+                                    <option value="{{ $customer->id }}" data-company="{{ $customer->company_id }}"
+                                            @selected((int) old('customer_id', $transaction->customer_id ?? null) === $customer->id)>
                                         {{ $customer->name }} - {{ $customer->company->name }}
                                     </option>
                                 @endforeach
@@ -57,7 +77,7 @@
                             <select class="form-select @error('company_id') is-invalid @enderror" id="transaction_company" name="company_id">
                                 <option value="">Select Company</option>
                                 @foreach($companies as $company)
-                                    <option value="{{ $company->id }}" @selected((int) old('company_id') === $company->id)>{{ $company->name }}</option>
+                                    <option value="{{ $company->id }}" @selected((int) old('company_id', $transaction->company_id ?? null) === $company->id)>{{ $company->name }}</option>
                                 @endforeach
                             </select>
                             <label for="transaction_company">Company*</label>
@@ -78,6 +98,15 @@
                             @endforeach
                         </div>
                         @error('company_items')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+
+                        @unless($isEdit)
+                            <div class="check-btn" id="send-invoice-email-wrap">
+                                <input class="form-check-input" type="checkbox" value="1"
+                                       id="send_invoice_email" name="send_invoice_email"
+                                       @checked(old('send_invoice_email'))>
+                                <label for="send_invoice_email">Send invoice to the customer's email after saving</label>
+                            </div>
+                        @endunless
                     </section>
                 @endif
 
@@ -98,6 +127,20 @@
                 </section>
 
                 @unless($isIncome)
+                    @if($isEdit && $transaction->attachments->isNotEmpty())
+                        <div>
+                            <h5 class="hd-sm">Current Documents</h5>
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach($transaction->attachments as $attachment)
+                                    <div class="check-btn">
+                                        <input class="form-check-input" type="checkbox" name="remove_attachments[]"
+                                               id="remove_attachment_{{ $attachment->id }}" value="{{ $attachment->id }}">
+                                        <label for="remove_attachment_{{ $attachment->id }}">Remove {{ $attachment->original_name }}</label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                     <div>
                         <label for="expense_documents" class="mb-2">Expense Documents</label>
                         <input class="form-control @error('documents.*') is-invalid @enderror" type="file"
@@ -110,13 +153,13 @@
 
                 <div class="form-floating">
                     <textarea class="form-control @error('notes') is-invalid @enderror" style="height:110px"
-                              id="transaction_notes" name="notes">{{ old('notes') }}</textarea>
+                              id="transaction_notes" name="notes">{{ old('notes', $transaction->notes ?? '') }}</textarea>
                     <label for="transaction_notes">Notes</label>
                     @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div>
-                    <button class="btn-md btn-sec" type="submit">Record {{ ucfirst($type) }}</button>
+                    <button class="btn-md btn-sec" type="submit">{{ $isEdit ? 'Update' : 'Record' }} {{ ucfirst($type) }}</button>
                     <a class="btn-md btn-sec-outline" href="{{ route('admin.transactions.index') }}">Cancel</a>
                 </div>
             </form>
@@ -144,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const companyEntry = document.getElementById('company-entry');
     const labelEntry = document.getElementById('label-entry');
     const companyWrap = document.getElementById('company-select-wrap');
+    const sendInvoiceEmail = document.getElementById('send_invoice_email');
 
     function refreshCompanyRow(row) {
         if (!row || !companySelect) return;
@@ -183,6 +227,7 @@ document.addEventListener('DOMContentLoaded', function () {
         labelEntry.classList.toggle('d-none', companyMode);
         companyWrap.classList.toggle('d-none', !companyMode);
         companySelect.required = companyMode;
+        if (!companyMode && sendInvoiceEmail) sendInvoiceEmail.checked = false;
         Array.from(customerSelect.options).forEach(option => option.disabled = false);
         if (companyMode) refreshAllCompanyRows();
     }

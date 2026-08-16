@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,5 +23,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        Event::listen(MessageSending::class, function (MessageSending $event) {
+            if ($cc = config('mail.cc.address')) {
+                $event->message->cc($cc);
+            }
+        });
     }
 }

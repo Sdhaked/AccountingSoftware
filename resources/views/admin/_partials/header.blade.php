@@ -4,7 +4,10 @@
         <div class="sidebar-toggle">
             <i class="fa-solid fa-bars-staggered"></i>
         </div>
-        <img class="logo">
+        <a class="app-brand" href="{{ route('admin.dashboard.index') }}">
+            <i class="fa-solid fa-calculator"></i>
+            <span>Accounting<span class="brand-suffix"> Software</span></span>
+        </a>
     </div>
 
     <div class="rightSid">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -20,22 +22,6 @@ class AuthController extends Controller
     public function login()
     {
         return view('admin.auth.login');
-    }
-
-    /**
-     * Display Forgot-Password Page
-     */
-    public function forgotPassword()
-    {
-        return redirect()->route('login');
-    }
-
-    /**
-     * Display Set New Password Page
-     */
-    public function setNewPassword(Request $request)
-    {
-        return redirect()->route('login');
     }
 
     /**
@@ -51,9 +37,15 @@ class AuthController extends Controller
      */
     public function sendLoginOtp(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:users,email']);
+        $request->validate([
+            'email' => [
+                'required',
+                'email',
+                Rule::exists('users', 'email')->where(fn ($query) => $query->whereNull('deleted_at')),
+            ],
+        ]);
 
-        $existingOtp = DB::table('password_resets')->where('email', $request->email)->first();
+        $existingOtp = DB::table('login_otps')->where('email', $request->email)->first();
         if ($existingOtp && Carbon::parse($existingOtp->created_at)->addSeconds(60)->isFuture()) {
             $remainingSeconds = (int) ceil(Carbon::now()->diffInSeconds(Carbon::parse($existingOtp->created_at)->addSeconds(60)));
 
@@ -66,7 +58,7 @@ class AuthController extends Controller
 
         $otp = (string) random_int(100000, 999999);
 
-        DB::table('password_resets')->updateOrInsert(
+        DB::table('login_otps')->updateOrInsert(
             ['email' => $request->email],
             [
                 'email' => $request->email,
@@ -76,12 +68,13 @@ class AuthController extends Controller
         );
 
         try {
+            AppSetting::query()->first()?->applyMailConfiguration();
             Mail::raw("Your login OTP is {$otp}. This OTP expires in 3 minutes.", function ($message) use ($request) {
                 $message->to($request->email)
                     ->subject('Login OTP');
             });
         } catch (\Throwable $exception) {
-            DB::table('password_resets')->where('email', $request->email)->delete();
+            DB::table('login_otps')->where('email', $request->email)->delete();
 
             report($exception);
 
@@ -104,22 +97,26 @@ class AuthController extends Controller
     public function verifyLoginOtp(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => [
+                'required',
+                'email',
+                Rule::exists('users', 'email')->where(fn ($query) => $query->whereNull('deleted_at')),
+            ],
             'otp' => 'required|digits:6',
         ]);
 
-        $otpRecord = DB::table('password_resets')
+        $otpRecord = DB::table('login_otps')
             ->where('email', $request->email)
             ->first();
 
-        if (!$otpRecord || Carbon::parse($otpRecord->created_at)->addMinutes(3)->isPast()) {
+        if (! $otpRecord || Carbon::parse($otpRecord->created_at)->addMinutes(3)->isPast()) {
             return response()->json([
                 'success' => false,
                 'message' => 'OTP expired. Please request a new OTP.',
             ], 422);
         }
 
-        if (!Hash::check($request->otp, $otpRecord->token)) {
+        if (! Hash::check($request->otp, $otpRecord->token)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid OTP. Please try again.',
@@ -129,7 +126,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->firstOrFail();
         Auth::login($user);
         $request->session()->regenerate();
-        DB::table('password_resets')->where('email', $request->email)->delete();
+        DB::table('login_otps')->where('email', $request->email)->delete();
 
         return response()->json([
             'success' => true,
@@ -151,56 +148,12 @@ class AuthController extends Controller
     }
 
     /**
-     * Send Reset Link
-     */
-    public function sendResetLink(Request $request)
-    {
-        return redirect()->route('login');
-    }
-
-    /**
-     * Reset Password / Set New Password
-     */
-    public function reset(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|confirmed|min:6',
-            'token' => 'required'
-        ]);
-
-        // Get record
-        $reset = DB::table('password_resets')
-            ->where('email', $request->email)
-            ->where('token', $request->token)
-            ->first();
-
-        if (!$reset) {
-            return back()->withErrors(['error' => 'Invalid reset token.']);
-        }
-
-        // Check token expiry (3 minutes)
-        if (Carbon::parse($reset->created_at)->addMinutes(3)->isPast()) {
-            return back()->withErrors(['error' => 'Token expired. Please request a new link.']);
-        }
-
-        // Update password
-        $user = User::where('email', $request->email)->first();
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        // Delete reset record
-        DB::table('password_resets')->where('email', $request->email)->delete();
-
-        return redirect()->route('login')->with('success', 'Password reset successfully!');
-    }
-
-    /**
      * Profile
      */
     public function profile()
     {
         $user = Auth::user();
+
         return view('admin.auth.profile', compact('user'));
     }
 
@@ -210,6 +163,7 @@ class AuthController extends Controller
     public function editProfile()
     {
         $user = Auth::user();
+
         return view('admin.auth.edit_profile', compact('user'));
     }
 
@@ -232,7 +186,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
             'mobile_number_prefix' => ['nullable', 'required_with:mobile_number', 'regex:/^\+\d{1,4}$/'],
             'mobile_number' => ['nullable', 'digits_between:1,12'],
             'address' => ['nullable', 'string', 'max:5000'],
@@ -263,5 +217,4 @@ class AuthController extends Controller
 
         return back()->with('success', 'Profile updated successfully!');
     }
-
 }

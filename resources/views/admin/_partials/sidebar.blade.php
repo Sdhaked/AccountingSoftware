@@ -1,23 +1,6 @@
 @php
-    $permissionTablesReady = \Illuminate\Support\Facades\Schema::hasTable('permissions')
-        && \Illuminate\Support\Facades\Schema::hasTable('role_permissions');
-    $sidebarPermissionSlugs = collect();
     $authUser = auth()->user();
-
-    if ($permissionTablesReady && $authUser?->role) {
-        $sidebarPermissionSlugs = \App\Models\Permission::query()
-            ->join('role_permissions', 'permissions.id', '=', 'role_permissions.permission_id')
-            ->where('role_permissions.role_id', $authUser->role)
-            ->pluck('permissions.slug');
-    }
-
-    $canSeeSidebar = function ($permissions) use ($permissionTablesReady, $sidebarPermissionSlugs) {
-        if (!$permissionTablesReady) {
-            return true;
-        }
-
-        return $sidebarPermissionSlugs->intersect((array) $permissions)->isNotEmpty();
-    };
+    $canSeeSidebar = fn ($permissions) => $authUser?->hasAnyPermission((array) $permissions) ?? false;
 
     $canDashboard = $canSeeSidebar(['dashboard-view-dashboard']);
 
@@ -38,6 +21,7 @@
     $visibleAccountingLinks = collect($accountingLinks)->filter(fn ($link) => $canSeeSidebar($link['permissions']));
     $canTransactions = $canSeeSidebar(['transactions-view-transactions', 'transactions-manage-transactions']);
     $canCertificates = $canSeeSidebar(['certificates-view-certificates', 'certificates-manage-certificates']);
+    $canSettings = $canSeeSidebar(['settings-view-settings', 'settings-manage-settings']);
 
     $canMasterUsers = $canSeeSidebar(['users-view-users', 'users-manage-users']);
     $canMasterRoles = $canSeeSidebar(['roles-view-roles', 'roles-manage-roles']);
@@ -95,6 +79,15 @@
                     <a href="{{ route('admin.certificates.index') }}" class="nav-link navJS">
                         <i class="fa-solid fa-certificate"></i>
                         <span class="link-name">Certificates</span>
+                    </a>
+                </li>
+            @endif
+
+            @if ($canSettings)
+                <li class="main-li">
+                    <a href="{{ route('admin.settings.index') }}" class="nav-link navJS">
+                        <i class="fa-solid fa-gear"></i>
+                        <span class="link-name">Settings</span>
                     </a>
                 </li>
             @endif

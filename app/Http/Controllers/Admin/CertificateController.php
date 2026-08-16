@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Certificate;
 use App\Models\Company;
 use App\Models\Customer;
@@ -18,8 +19,8 @@ class CertificateController extends Controller
         $certificates = Certificate::with(['customer', 'company'])
             ->when($request->filled('search'), fn ($query) => $query
                 ->where(fn ($subQuery) => $subQuery
-                    ->where('certificate_number', 'like', '%' . $request->search . '%')
-                    ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', '%' . $request->search . '%'))))
+                    ->where('certificate_number', 'like', '%'.$request->search.'%')
+                    ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', '%'.$request->search.'%'))))
             ->when($request->boolean('expired'), fn ($query) => $query->whereDate('expires_at', '<', today()))
             ->latest('id')
             ->paginate(config('constants.pagination.per_page', 10));
@@ -52,7 +53,7 @@ class CertificateController extends Controller
         DB::transaction(function () use ($validated) {
             $dailyNumber = Certificate::whereDate('issued_at', $validated['issued_at'])
                 ->lockForUpdate()->count() + 1;
-            $certificateNumber = date('Y-m-d', strtotime($validated['issued_at'])) . '-' . $dailyNumber;
+            $certificateNumber = date('Y-m-d', strtotime($validated['issued_at'])).'-'.$dailyNumber;
 
             Certificate::create($validated + ['certificate_number' => $certificateNumber]);
         });
@@ -70,8 +71,9 @@ class CertificateController extends Controller
     public function download(Certificate $certificate)
     {
         $certificate->load(['customer', 'company']);
+        $sponsorImage = AppSetting::query()->first()?->sponsorImageDataUri();
 
-        return Pdf::loadView('admin.certificates.pdf', compact('certificate'))
+        return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'sponsorImage'))
             ->setPaper('a4', 'landscape')
             ->download("certificate-{$certificate->certificate_number}.pdf");
     }

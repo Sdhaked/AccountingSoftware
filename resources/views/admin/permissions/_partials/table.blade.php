@@ -1,3 +1,7 @@
+@php
+    $canEditPermissions = auth()->user()->hasAnyPermission(['permissions-edit-permissions', 'permissions-manage-permissions']);
+    $canDeletePermissions = auth()->user()->hasAnyPermission(['permissions-delete-permissions', 'permissions-manage-permissions']);
+@endphp
 <div class="table-responsive mt-4">
     <table class="table mob-view">
         <thead>
@@ -36,11 +40,13 @@
                     <td>
                         <div class="data-label">Action</div>
                         <div class="action-row">
-                            <a href="{{ route('admin.permissions.edit', $permission->id) }}" role="button"
-                               class="action-btn edit">
-                                <i class="fa-regular fa-pen-to-square"></i>
-                            </a>
-                            @if($permission->roles_count === 0)
+                            @if($canEditPermissions)
+                                <a href="{{ route('admin.permissions.edit', $permission->id) }}" role="button"
+                                   class="action-btn edit">
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                </a>
+                            @endif
+                            @if($canDeletePermissions && $permission->roles_count === 0)
                                 <form action="{{ route('admin.permissions.destroy', $permission->id) }}" method="POST"
                                       onsubmit="return confirm('Are you sure you want to delete this permission?');">
                                     @csrf

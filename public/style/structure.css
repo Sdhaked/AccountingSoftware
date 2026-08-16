@@ -335,6 +335,26 @@ html.dark .side-nav .menu-items::-webkit-scrollbar-thumb {
   margin-left: 30px;
 }
 
+.header .leftSid .app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: 24px;
+  color: var(--color-text-100);
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.header .leftSid .app-brand i {
+  color: var(--color-primary);
+}
+
+.header .leftSid .app-brand .brand-suffix {
+  display: inline-block;
+  margin-left: 4px;
+}
+
 /* ===> Top Btn */
 .header .top-btn {
   font-size: 19px;
@@ -523,6 +543,15 @@ html.dark .header .rightSid .mode-toggle .fa-moon {
 
   .header .leftSid .logo {
     height: 30px;
+  }
+
+  .header .leftSid .app-brand {
+    margin-left: 12px;
+    font-size: 16px;
+  }
+
+  .header .leftSid .app-brand .brand-suffix {
+    display: none;
   }
 }
 

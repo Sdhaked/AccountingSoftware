@@ -24,7 +24,6 @@ class User extends Authenticatable
         'email',
         'email_verified_at',
         'password',
-        'plain_password',
         'role',
         'profile_picture',
         'mobile_number_prefix',
@@ -58,5 +57,18 @@ class User extends Authenticatable
     public function roleModel()
     {
         return $this->belongsTo(Role::class, 'role');
+    }
+
+    public function hasAnyPermission(array|string $permissions): bool
+    {
+        if (! $this->role) {
+            return false;
+        }
+
+        $this->loadMissing('roleModel.permissions');
+        $permissionSlugs = collect((array) $permissions);
+
+        return $this->roleModel?->permissions
+            ->contains(fn (Permission $permission) => $permissionSlugs->contains($permission->slug)) ?? false;
     }
 }

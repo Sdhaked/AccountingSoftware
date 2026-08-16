@@ -14,6 +14,7 @@
     .totals { margin-top:15px; }
     .totals td { padding:5px; }
     .muted { color:#697386; }
+    .sponsor { max-width:150px; max-height:56px; margin-top:22px; }
 </style></head><body>
 <table class="header"><tr><td><h1>INVOICE</h1><div class="muted">{{ $transaction->reference_number }}</div></td>
 <td class="number"><strong>Date</strong><br>{{ $transaction->occurred_at->format('d M Y, H:i') }}</td></tr></table>
@@ -29,4 +30,5 @@
 <tr><td></td><td>Tax</td><td class="number">€{{ number_format((float) $transaction->tax_total, 2) }}</td></tr>
 <tr><td></td><td><strong>Total</strong></td><td class="number"><strong>€{{ number_format((float) $transaction->total, 2) }}</strong></td></tr></table>
 @if($transaction->notes)<p><strong>Notes</strong><br>{!! nl2br(e($transaction->notes)) !!}</p>@endif
+@if($sponsorImage)<div class="number"><img class="sponsor" src="{{ $sponsorImage }}" alt="Sponsor"></div>@endif
 </body></html>

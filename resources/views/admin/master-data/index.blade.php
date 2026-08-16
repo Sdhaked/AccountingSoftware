@@ -9,6 +9,11 @@
 @endsection
 
 @section('body')
+    @php
+        $canCreate = auth()->user()->hasAnyPermission(["{$entity}-create-{$entity}", "{$entity}-manage-{$entity}"]);
+        $canEdit = auth()->user()->hasAnyPermission(["{$entity}-edit-{$entity}", "{$entity}-manage-{$entity}"]);
+        $canDelete = auth()->user()->hasAnyPermission(["{$entity}-delete-{$entity}", "{$entity}-manage-{$entity}"]);
+    @endphp
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
@@ -20,9 +25,11 @@
 
             <h6 class="hd-sm">Total Result: <span>{{ $records->total() }}</span></h6>
             <div class="dataTable-HD">
-                <a href="{{ route('admin.master-data.create', $entity) }}" class="btn-sm btn-sec">
-                    <i class="fa-solid fa-plus i-mr"></i> Create New
-                </a>
+                @if($canCreate)
+                    <a href="{{ route('admin.master-data.create', $entity) }}" class="btn-sm btn-sec">
+                        <i class="fa-solid fa-plus i-mr"></i> Create New
+                    </a>
+                @endif
                 <form method="GET" style="flex-grow:1;max-width:480px">
                     <input type="search" name="search" class="form-control" placeholder="Search"
                            value="{{ request('search') }}">
@@ -66,15 +73,19 @@
                                 <div class="action-row">
                                     <a href="{{ route('admin.master-data.show', [$entity, $record->id]) }}"
                                        class="action-btn" title="View"><i class="fa-regular fa-eye"></i></a>
-                                    <a href="{{ route('admin.master-data.edit', [$entity, $record->id]) }}"
-                                       class="action-btn edit" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
-                                    <form action="{{ route('admin.master-data.destroy', [$entity, $record->id]) }}" method="POST"
-                                          onsubmit="return confirm('Are you sure you want to delete this record?')">
-                                        @csrf @method('DELETE')
-                                        <button class="action-btn delete" type="submit" title="Delete">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if($canEdit)
+                                        <a href="{{ route('admin.master-data.edit', [$entity, $record->id]) }}"
+                                           class="action-btn edit" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
+                                    @endif
+                                    @if($canDelete)
+                                        <form action="{{ route('admin.master-data.destroy', [$entity, $record->id]) }}" method="POST"
+                                              onsubmit="return confirm('Are you sure you want to delete this record?')">
+                                            @csrf @method('DELETE')
+                                            <button class="action-btn delete" type="submit" title="Delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

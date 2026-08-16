@@ -5,7 +5,7 @@
 @section('body')
     <section class="auth-wrapper">
         <div style="width:100%; max-width: 30rem;">
-            <form class="style-box auth-box needs-validation" id="loginOtpForm" novalidate>
+            <form class="style-box auth-box" id="loginOtpForm" novalidate>
                 @csrf
                 <h1 class="hd-lg text-center my-2">Login</h1>
 
@@ -25,7 +25,8 @@
                     </div>
 
                     <div class="form-floating flex-grow-1 d-none" id="otpBox">
-                        <input type="text" name="otp" class="form-control" id="loginOtp" inputmode="numeric" maxlength="6" required>
+                        <input type="text" name="otp" class="form-control" id="loginOtp" inputmode="numeric"
+                               pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
                         <label for="loginOtp">Enter OTP</label>
                     </div>
 
@@ -39,6 +40,7 @@
                     <button type="button" id="resendOtpBtn" class="p-0" style="color:var(--color-primary); font-size: .9rem;" disabled>Re-send OTP in 60s</button>
                     <button type="button" id="changeEmailBtn" class="p-0" style="color:var(--color-text-100); font-size: .9rem;">Change Email</button>
                 </div>
+
             </form>
         </div>
     </section>
@@ -97,12 +99,14 @@
 
         function showOtpStep(email) {
             otpEmail = email;
+            emailInput.classList.remove('is-invalid');
             emailBox.classList.add('d-none');
             sendOtpBtn.classList.add('d-none');
             otpBox.classList.remove('d-none');
             verifyOtpBtn.classList.remove('d-none');
             otpActions.classList.remove('d-none');
             otpInput.value = '';
+            otpInput.classList.remove('is-invalid');
             otpInput.focus();
             startResendTimer();
         }
@@ -110,6 +114,7 @@
         function showEmailStep() {
             clearInterval(resendTimer);
             otpEmail = '';
+            otpInput.classList.remove('is-invalid');
             otpBox.classList.add('d-none');
             verifyOtpBtn.classList.add('d-none');
             otpActions.classList.add('d-none');
@@ -118,6 +123,15 @@
             otpMessage.style.display = 'none';
             emailInput.focus();
         }
+
+        emailInput.addEventListener('input', function () {
+            emailInput.classList.remove('is-invalid');
+        });
+
+        otpInput.addEventListener('input', function () {
+            otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+            otpInput.classList.remove('is-invalid');
+        });
 
         async function postJson(url, data) {
             const response = await fetch(url, {
@@ -153,14 +167,21 @@
                 return;
             }
 
+            if (!emailInput.checkValidity()) {
+                emailInput.classList.add('is-invalid');
+                showMessage('Enter a valid registered email address.', true);
+                emailInput.focus();
+                return;
+            }
+
             setButtonLoading(sendOtpBtn, true, 'Sending...');
-            showMessage('Sending OTP...', false, true);
 
             try {
                 const result = await postJson('{{ route('login.otp.send') }}', { email: emailInput.value });
                 showMessage(result.message || 'OTP sent successfully.');
                 showOtpStep(emailInput.value);
             } catch (error) {
+                emailInput.classList.add('is-invalid');
                 showMessage(error.message || 'Unable to send OTP. Please try again.', true);
             } finally {
                 setButtonLoading(sendOtpBtn, false);
@@ -168,12 +189,20 @@
         });
 
         verifyOtpBtn.addEventListener('click', async function () {
+            if (!/^\d{6}$/.test(otpInput.value)) {
+                otpInput.classList.add('is-invalid');
+                showMessage('Enter the 6-digit OTP sent to your email.', true);
+                otpInput.focus();
+                return;
+            }
+
             setButtonLoading(verifyOtpBtn, true, 'Checking...');
 
             try {
                 const result = await postJson('{{ route('login.post') }}', { email: otpEmail, otp: otpInput.value });
                 window.location.href = result.redirect || '{{ route('admin.dashboard.index') }}';
             } catch (error) {
+                otpInput.classList.add('is-invalid');
                 showMessage(error.message || 'Invalid OTP. Please try again.', true);
             } finally {
                 setButtonLoading(verifyOtpBtn, false);
@@ -182,7 +211,6 @@
 
         resendOtpBtn.addEventListener('click', async function () {
             setButtonLoading(resendOtpBtn, true, 'Sending...');
-            showMessage('Sending OTP again...', false, true);
 
             try {
                 const result = await postJson('{{ route('login.otp.send') }}', { email: otpEmail });

@@ -1,5 +1,17 @@
 @php
-    $breadcrumb_title = $breadcrumb_title ?? 'Dashboard';
+    if (!isset($breadcrumb_title)) {
+        $breadcrumb_title = match (true) {
+            request()->routeIs('admin.settings.*') => 'Settings',
+            request()->routeIs('admin.transactions.*') => 'Income & Expenses',
+            request()->routeIs('admin.certificates.*') => 'Certificates',
+            request()->routeIs('admin.master-data.*') => $definition['title'] ?? 'Master Data',
+            request()->routeIs('admin.users.*') => 'Users',
+            request()->routeIs('admin.roles.*') => 'Roles',
+            request()->routeIs('admin.permissions.*') => 'Permissions',
+            request()->routeIs('profile*') => 'Profile',
+            default => 'Dashboard',
+        };
+    }
     $breadcrumb_items = $breadcrumb_items ?? [];
 @endphp
 
@@ -7,9 +19,9 @@
     <h5 class="pTitle">{{ $breadcrumb_title }}</h5>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item" onclick="history.back()">
-                Previous Pg
-            </li>
+            @unless(request()->routeIs('admin.dashboard.index'))
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard.index') }}">Dashboard</a></li>
+            @endunless
             @if(!empty($breadcrumb_items))
                 @foreach($breadcrumb_items as $item)
                     @if($loop->last)

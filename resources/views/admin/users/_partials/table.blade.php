@@ -1,3 +1,7 @@
+@php
+    $canEditUsers = auth()->user()->hasAnyPermission(['users-edit-users', 'users-manage-users']);
+    $canDeleteUsers = auth()->user()->hasAnyPermission(['users-delete-users', 'users-manage-users']);
+@endphp
 <div class="table-responsive mt-4">
     <table class="table mob-view">
         <thead>
@@ -49,7 +53,7 @@
                         <div class="data-label">Action</div>
                         <div class="action-row">
                             @php($isDeveloperAdmin = $user->roleModel?->slug === 'developer-admin')
-                            @if($user->trashed())
+                            @if($user->trashed() && $canEditUsers)
                                 <form action="{{ route('admin.users.activate', $user->id) }}" method="POST"
                                       onsubmit="return confirm('Are you sure you want to activate this user?');">
                                     @csrf
@@ -57,11 +61,23 @@
                                         <i class="fa-solid fa-user-check"></i>
                                     </button>
                                 </form>
+                                @if($canPermanentlyDelete && !$isDeveloperAdmin)
+                                    <form action="{{ route('admin.users.force-destroy', $user->id) }}" method="POST"
+                                          onsubmit="return confirm('Permanently delete this user? This cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="action-btn delete" type="submit" title="Permanently delete user">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             @elseif(auth()->id() !== $user->id)
-                                <a href="{{ route('admin.users.edit', $user->id) }}" role="button" class="action-btn edit">
-                                    <i class="fa-regular fa-pen-to-square"></i>
-                                </a>
-                                @unless($isDeveloperAdmin)
+                                @if($canEditUsers)
+                                    <a href="{{ route('admin.users.edit', $user->id) }}" role="button" class="action-btn edit">
+                                        <i class="fa-regular fa-pen-to-square"></i>
+                                    </a>
+                                @endif
+                                @if($canDeleteUsers && !$isDeveloperAdmin)
                                     <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST"
                                           onsubmit="return confirm('Are you sure you want to deactivate this user?');">
                                         @csrf
@@ -70,7 +86,7 @@
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
-                                @endunless
+                                @endif
                             @endif
                         </div>
                     </td>

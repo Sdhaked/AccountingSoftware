@@ -25,9 +25,11 @@
 
                 <div class="dataTable-HD">
                     <div>
-                        <a href="{{ route('admin.roles.create') }}" type="button" class="btn-sm btn-sec">
-                            <i class="fa-solid fa-plus i-mr"></i> Create New
-                        </a>
+                        @if(auth()->user()->hasAnyPermission(['roles-create-roles', 'roles-manage-roles']))
+                            <a href="{{ route('admin.roles.create') }}" type="button" class="btn-sm btn-sec">
+                                <i class="fa-solid fa-plus i-mr"></i> Create New
+                            </a>
+                        @endif
                     </div>
 
                     <form method="GET" style="flex-grow: 1; max-width: 480px;">

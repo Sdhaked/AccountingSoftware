@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Middleware\EnsureMasterDataPermission;
+use App\Http\Middleware\EnsureTransactionCreationPermission;
+use App\Http\Middleware\EnsureUserHasPermission;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -15,7 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'permission' => EnsureUserHasPermission::class,
+            'master-data.permission' => EnsureMasterDataPermission::class,
+            'transaction.create.permission' => EnsureTransactionCreationPermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // This handles the redirect-to-login issue for API requests
@@ -34,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             $shouldKeepNotFoundResponse = $request->is('api/*')
                 || $request->expectsJson()
                 || $request->ajax()
-                || !$request->acceptsHtml()
+                || ! $request->acceptsHtml()
                 || ($fetchDestination !== null && $fetchDestination !== 'document')
                 || $request->path() === '/';
 

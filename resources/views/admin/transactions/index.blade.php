@@ -17,9 +17,15 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h4 class="hd-lg">Income & Expense List</h4>
                 <div class="d-flex gap-2 flex-wrap">
-                    <a class="btn-sm btn-sec" href="{{ route('admin.transactions.create', 'income') }}"><i class="fa-solid fa-plus i-mr"></i>Income</a>
-                    <a class="btn-sm btn-sec" href="{{ route('admin.transactions.create', 'expense') }}"><i class="fa-solid fa-plus i-mr"></i>Expense</a>
-                    <a class="btn-sm btn-sec-outline" href="{{ route('admin.transactions.export', request()->query()) }}"><i class="fa-solid fa-file-excel i-mr"></i>Export Excel</a>
+                    @if(auth()->user()->hasAnyPermission(['transactions-create-income', 'transactions-manage-transactions']))
+                        <a class="btn-sm btn-sec" href="{{ route('admin.transactions.create', 'income') }}"><i class="fa-solid fa-plus i-mr"></i>Income</a>
+                    @endif
+                    @if(auth()->user()->hasAnyPermission(['transactions-create-expense', 'transactions-manage-transactions']))
+                        <a class="btn-sm btn-sec" href="{{ route('admin.transactions.create', 'expense') }}"><i class="fa-solid fa-plus i-mr"></i>Expense</a>
+                    @endif
+                    @if(auth()->user()->hasAnyPermission(['transactions-export-transactions', 'transactions-manage-transactions']))
+                        <a class="btn-sm btn-sec-outline" href="{{ route('admin.transactions.export', request()->query()) }}"><i class="fa-solid fa-file-excel i-mr"></i>Export Excel</a>
+                    @endif
                 </div>
             </div>
 
@@ -53,7 +59,26 @@
                     </div>
                 </div>
                 <div><button class="btn-sm btn-sec" type="submit">Apply Filters</button> <a class="btn-sm btn-sec-outline" href="{{ route('admin.transactions.index') }}">Reset</a></div>
+                @if($errors->any())<div class="invalid-feedback d-block mt-2">{{ $errors->first() }}</div>@endif
             </form>
+
+            @if($hasActiveFilters
+                && $filteredTransactionCount > 0
+                && auth()->user()->hasAnyPermission(['transactions-bulk-delete-transactions', 'transactions-manage-transactions']))
+                <div class="d-flex justify-content-end mb-4">
+                    <form method="POST" action="{{ route('admin.transactions.bulk-destroy') }}"
+                          onsubmit="return confirm('Permanently delete all {{ $filteredTransactionCount }} {{ $filteredTransactionCount === 1 ? 'entry' : 'entries' }} matching the active filters?')">
+                        @csrf
+                        @method('DELETE')
+                        @foreach($filters as $name => $value)
+                            @if(filled($value))<input type="hidden" name="{{ $name }}" value="{{ $value }}">@endif
+                        @endforeach
+                        <button class="btn-sm btn-sec-outline red" type="submit">
+                            <i class="fa-solid fa-trash i-mr"></i>Delete {{ $filteredTransactionCount }} Filtered {{ $filteredTransactionCount === 1 ? 'Entry' : 'Entries' }}
+                        </button>
+                    </form>
+                </div>
+            @endif
 
             <div class="grid-auto gap-card mb-4">
                 @foreach(['income' => 'Income', 'expense' => 'Expense', 'profit' => 'Profit', 'loss' => 'Loss'] as $key => $label)
@@ -77,6 +102,9 @@
                         <td><div class="data-label">Total</div>€{{ number_format((float) $transaction->total, 2) }}</td>
                         <td><div class="data-label">Actions</div><div class="action-row">
                             <a class="action-btn" href="{{ route('admin.transactions.show', $transaction) }}" title="View"><i class="fa-regular fa-eye"></i></a>
+                            @if(auth()->user()->hasAnyPermission(['transactions-edit-transactions', 'transactions-manage-transactions']))
+                                <a class="action-btn edit" href="{{ route('admin.transactions.edit', $transaction) }}" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                            @endif
                             @if($transaction->type === 'income')<a class="action-btn edit" href="{{ route('admin.transactions.invoice', $transaction) }}" title="Invoice PDF"><i class="fa-solid fa-file-pdf"></i></a>@endif
                         </div></td>
                     </tr>

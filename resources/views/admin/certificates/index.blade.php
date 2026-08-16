@@ -8,6 +8,11 @@
 @endsection
 
 @section('body')
+    @php
+        $canCreate = auth()->user()->hasAnyPermission(['certificates-create-certificates', 'certificates-manage-certificates']);
+        $canDownload = auth()->user()->hasAnyPermission(['certificates-download-certificates', 'certificates-manage-certificates']);
+        $canDelete = auth()->user()->hasAnyPermission(['certificates-delete-certificates', 'certificates-manage-certificates']);
+    @endphp
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
@@ -17,9 +22,11 @@
             <h4 class="hd-lg">Certificate List</h4>
 
             <div class="dataTable-HD">
-                <a class="btn-sm btn-sec" href="{{ route('admin.certificates.create') }}">
-                    <i class="fa-solid fa-plus i-mr"></i> Create Certificate
-                </a>
+                @if($canCreate)
+                    <a class="btn-sm btn-sec" href="{{ route('admin.certificates.create') }}">
+                        <i class="fa-solid fa-plus i-mr"></i> Create Certificate
+                    </a>
+                @endif
                 <form method="GET" style="flex-grow:1;max-width:480px">
                     <input class="form-control" type="search" name="search" placeholder="Certificate ID or customer"
                            value="{{ request('search') }}">
@@ -31,7 +38,7 @@
                 </form>
             </div>
 
-            <div class="create-event-form-box my-4">
+            @if($canDelete)<div class="create-event-form-box my-4">
                 <h6 class="hd-sm">Delete All Expired Certificates</h6>
                 <form method="POST" action="{{ route('admin.certificates.destroy-expired') }}"
                       onsubmit="return confirm('This permanently deletes every expired certificate. Continue?')">
@@ -43,7 +50,7 @@
                     </div>
                     @error('confirmation')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </form>
-            </div>
+            </div>@endif
 
             <div class="table-responsive">
                 <table class="table mob-view">
@@ -60,11 +67,13 @@
                                 <div class="data-label">Actions</div>
                                 <div class="action-row">
                                     <a class="action-btn" href="{{ route('admin.certificates.show', $certificate) }}" title="View"><i class="fa-regular fa-eye"></i></a>
-                                    <a class="action-btn edit" href="{{ route('admin.certificates.download', $certificate) }}" title="Download"><i class="fa-solid fa-download"></i></a>
-                                    <form method="POST" action="{{ route('admin.certificates.destroy', $certificate) }}" onsubmit="return confirm('Delete this certificate?')">
-                                        @csrf @method('DELETE')
-                                        <button class="action-btn delete" type="submit" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                                    </form>
+                                    @if($canDownload)<a class="action-btn edit" href="{{ route('admin.certificates.download', $certificate) }}" title="Download"><i class="fa-solid fa-download"></i></a>@endif
+                                    @if($canDelete)
+                                        <form method="POST" action="{{ route('admin.certificates.destroy', $certificate) }}" onsubmit="return confirm('Delete this certificate?')">
+                                            @csrf @method('DELETE')
+                                            <button class="action-btn delete" type="submit" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

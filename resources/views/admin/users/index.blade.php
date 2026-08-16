@@ -25,9 +25,11 @@
 
                 <div class="dataTable-HD">
                     <div>
-                        <a href="{{ route('admin.users.create') }}" type="button" class="btn-sm btn-sec">
-                            <i class="fa-solid fa-plus i-mr"></i> Create New
-                        </a>
+                        @if(auth()->user()->hasAnyPermission(['users-create-users', 'users-manage-users']))
+                            <a href="{{ route('admin.users.create') }}" type="button" class="btn-sm btn-sec">
+                                <i class="fa-solid fa-plus i-mr"></i> Create New
+                            </a>
+                        @endif
                     </div>
 
                     <form method="GET" style="flex-grow: 1; max-width: 480px;">
@@ -37,7 +39,21 @@
                     </form>
                 </div>
 
-                @include('admin.users._partials.table', ['users' => $users])
+                @if($canPermanentlyDelete && $users->whereNotNull('deleted_at')->isNotEmpty())
+                    <form class="mt-3" action="{{ route('admin.users.empty-trash') }}" method="POST"
+                          onsubmit="return confirm('Permanently delete every eligible user in trash?')">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn-sm btn-sec-outline" type="submit">
+                            <i class="fa-solid fa-trash-can i-mr"></i>Empty User Trash
+                        </button>
+                    </form>
+                @endif
+
+                @include('admin.users._partials.table', [
+                    'users' => $users,
+                    'canPermanentlyDelete' => $canPermanentlyDelete,
+                ])
             </div>
         </main>
     </section>

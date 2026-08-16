@@ -15,9 +15,32 @@
         @include('admin._partials.breadcrumb')
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h4 class="hd-lg">{{ $transaction->reference_number }}</h4>
-            @if($transaction->type === 'income')
-                <a class="btn-sm btn-sec" href="{{ route('admin.transactions.invoice', $transaction) }}"><i class="fa-solid fa-file-pdf i-mr"></i>Download Invoice</a>
-            @endif
+            <div class="d-flex gap-2 flex-wrap">
+                @if(auth()->user()->hasAnyPermission(['transactions-edit-transactions', 'transactions-manage-transactions']))
+                    <a class="btn-sm btn-sec-outline" href="{{ route('admin.transactions.edit', $transaction) }}"><i class="fa-solid fa-pen i-mr"></i>Edit</a>
+                @endif
+                @if($transaction->type === 'income')
+                    <a class="btn-sm btn-sec" href="{{ route('admin.transactions.invoice', $transaction) }}"><i class="fa-solid fa-file-pdf i-mr"></i>Download Invoice</a>
+                @endif
+                @if($transaction->type === 'income'
+                    && $transaction->source_type === 'company'
+                    && auth()->user()->hasAnyPermission(['transactions-send-invoice-email', 'transactions-manage-transactions']))
+                    <form method="POST" action="{{ route('admin.transactions.send-invoice-email', $transaction) }}">
+                        @csrf
+                        <button class="btn-sm btn-sec" type="submit">
+                            <i class="fa-solid fa-envelope i-mr"></i>Send Invoice Email
+                        </button>
+                    </form>
+                @endif
+                @if(auth()->user()->hasAnyPermission(['transactions-delete-transactions', 'transactions-manage-transactions']))
+                    <form method="POST" action="{{ route('admin.transactions.destroy', $transaction) }}"
+                          onsubmit="return confirm('Delete this transaction permanently?')">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn-sm btn-sec-outline" type="submit"><i class="fa-solid fa-trash i-mr"></i>Delete</button>
+                    </form>
+                @endif
+            </div>
         </div>
         <div class="table-responsive mb-4"><table class="table"><tbody>
             <tr><th>Type</th><td class="text-capitalize">{{ $transaction->type }}</td><th>Date & Time</th><td>{{ $transaction->occurred_at->format('d M Y, H:i') }}</td></tr>

@@ -9,6 +9,7 @@
     p { font-size: 18px; line-height: 1.6; }
     .meta { margin-top: 55px; width: 100%; }
     .meta td { width: 33%; font-size: 14px; }
+    .sponsor { max-width: 170px; max-height: 64px; margin-top: 28px; }
 </style></head><body>
 <div class="certificate">
     <div>Certificate ID: <strong>{{ $certificate->certificate_number }}</strong></div>
@@ -21,5 +22,6 @@
         <td></td>
         <td>Expires<br><strong>{{ $certificate->expires_at->format('d M Y') }}</strong></td>
     </tr></table>
+    @if($sponsorImage)<img class="sponsor" src="{{ $sponsorImage }}" alt="Sponsor">@endif
 </div>
 </body></html>

@@ -59,12 +59,9 @@ class AccountingTransaction extends Model
                 fn (Builder $q) => $q->where('source_type', $filters['source']))
             ->when(filled($filters['company_id'] ?? null),
                 fn (Builder $q) => $q->where('company_id', $filters['company_id']))
-            ->when(filled($filters['from'] ?? null), function (Builder $q) use ($filters) {
-                $q->whereDate('occurred_at', '>=', $filters['from']);
-
-                if (filled($filters['to'] ?? null)) {
-                    $q->whereDate('occurred_at', '<=', $filters['to']);
-                }
-            });
+            ->when(filled($filters['from'] ?? null),
+                fn (Builder $q) => $q->whereDate('occurred_at', '>=', $filters['from']))
+            ->when(filled($filters['to'] ?? null),
+                fn (Builder $q) => $q->whereDate('occurred_at', '<=', $filters['to']));
     }
 }

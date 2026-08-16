@@ -30,6 +30,7 @@ class RolePermissionSeeder extends Seeder
             $this->permissionsFor('Settings', [
                 'Manage Settings',
                 'View Settings',
+                'Update Settings',
             ]),
             $this->permissionsFor('Master Control', [
                 'Manage Master Control',
@@ -78,7 +79,9 @@ class RolePermissionSeeder extends Seeder
                 'Manage Certificates', 'View Certificates', 'Create Certificates', 'Delete Certificates', 'Download Certificates',
             ]),
             $this->permissionsFor('Transactions', [
-                'Manage Transactions', 'View Transactions', 'Create Income', 'Create Expense', 'Export Transactions',
+                'Manage Transactions', 'View Transactions', 'Create Income', 'Create Expense',
+                'Edit Transactions', 'Delete Transactions', 'Bulk Delete Transactions',
+                'Send Invoice Email', 'Export Transactions',
             ])
         );
 
@@ -120,7 +123,7 @@ class RolePermissionSeeder extends Seeder
             $permissionSlugs = [];
 
             foreach ($permissions as $permission) {
-                $slug = Str::slug($permission['module'] . ' ' . $permission['name']);
+                $slug = Str::slug($permission['module'].' '.$permission['name']);
                 $permissionSlugs[] = $slug;
 
                 Permission::updateOrCreate(
@@ -176,7 +179,7 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($permissionsByModule as $module => $names) {
             foreach ($names as $name) {
-                $slugs[] = Str::slug($module . ' ' . $name);
+                $slugs[] = Str::slug($module.' '.$name);
             }
         }
 

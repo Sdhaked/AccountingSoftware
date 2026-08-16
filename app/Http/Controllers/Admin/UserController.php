@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountingTransaction;
+use App\Models\AppSetting;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -36,11 +39,13 @@ class UserController extends Controller
             ->orderBy('id', 'desc')
             ->paginate($this->perPage);
 
+        $canPermanentlyDelete = $this->canPermanentlyDelete($request->user());
+
         if ($request->ajax()) {
-            return view('admin.users._partials.table', compact('users'))->render();
+            return view('admin.users._partials.table', compact('users', 'canPermanentlyDelete'))->render();
         }
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'canPermanentlyDelete'));
     }
 
     public function create()
@@ -72,7 +77,6 @@ class UserController extends Controller
             'email' => $validated['email'],
             'email_verified_at' => now(),
             'password' => Hash::make($validated['password']),
-            'plain_password' => $validated['password'],
             'role' => $validated['role'],
             'mobile_number_prefix' => $phoneData['mobile_number_prefix'],
             'mobile_number' => $phoneData['mobile_number'],
@@ -123,9 +127,8 @@ class UserController extends Controller
             'mobile_number' => $phoneData['mobile_number'],
         ]);
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
-            $user->plain_password = $validated['password'];
         }
 
         $user->save();
@@ -159,7 +162,7 @@ class UserController extends Controller
     {
         $user = User::withTrashed()->with('roleModel')->findOrFail($id);
 
-        if (!$user->trashed()) {
+        if (! $user->trashed()) {
             return redirect()->route('admin.users.index')->with('success', 'User is already active.');
         }
 
@@ -173,6 +176,60 @@ class UserController extends Controller
         }
 
         return redirect()->route('admin.users.index')->with('success', 'User activated successfully!');
+    }
+
+    public function forceDestroy(Request $request, int $id)
+    {
+        abort_unless($this->canPermanentlyDelete($request->user()), 403);
+
+        $user = User::onlyTrashed()->with('roleModel')->findOrFail($id);
+        if ($this->isDeveloperAdmin($user)) {
+            return back()->with('error', 'Developer admin account cannot be permanently deleted.');
+        }
+
+        if (AccountingTransaction::where('created_by', $user->id)->exists()) {
+            return back()->with('error', 'This user has accounting entries and cannot be permanently deleted.');
+        }
+
+        $profilePicture = $user->profile_picture;
+        $user->forceDelete();
+        if ($profilePicture) {
+            Storage::disk('public')->delete($profilePicture);
+        }
+
+        return back()->with('success', 'User permanently deleted.');
+    }
+
+    public function emptyTrash(Request $request)
+    {
+        abort_unless($this->canPermanentlyDelete($request->user()), 403);
+
+        $deleted = 0;
+        $skipped = 0;
+        $users = User::onlyTrashed()->with('roleModel')->get();
+
+        foreach ($users as $user) {
+            if ($this->isDeveloperAdmin($user)
+                || AccountingTransaction::where('created_by', $user->id)->exists()) {
+                $skipped++;
+
+                continue;
+            }
+
+            $profilePicture = $user->profile_picture;
+            $user->forceDelete();
+            if ($profilePicture) {
+                Storage::disk('public')->delete($profilePicture);
+            }
+            $deleted++;
+        }
+
+        $message = "{$deleted} user(s) permanently deleted.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} protected or in-use user(s) skipped.";
+        }
+
+        return back()->with('success', $message);
     }
 
     private function preparePhoneInput(Request $request): void
@@ -209,5 +266,16 @@ class UserController extends Controller
         $role = $user->relationLoaded('roleModel') ? $user->roleModel : $user->roleModel()->first();
 
         return $role?->slug === 'developer-admin';
+    }
+
+    private function canPermanentlyDelete(?User $user): bool
+    {
+        if (! $user || ! AppSetting::query()->value('allow_super_admin_permanent_delete')) {
+            return false;
+        }
+
+        $role = $user->relationLoaded('roleModel') ? $user->roleModel : $user->roleModel()->first();
+
+        return in_array($role?->slug, ['super-admin', 'developer-admin'], true);
     }
 }

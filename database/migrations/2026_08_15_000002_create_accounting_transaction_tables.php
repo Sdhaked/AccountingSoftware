@@ -34,7 +34,9 @@ return new class extends Migration
 
         Schema::create('accounting_transaction_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('accounting_transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('accounting_transaction_id');
+            $table->foreign('accounting_transaction_id', 'acct_txn_items_transaction_fk')
+                ->references('id')->on('accounting_transactions')->cascadeOnDelete();
             $table->enum('item_type', ['product', 'service', 'label', 'other']);
             $table->string('label');
             $table->decimal('quantity', 12, 3)->default(1);
@@ -49,7 +51,9 @@ return new class extends Migration
 
         Schema::create('accounting_transaction_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('accounting_transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('accounting_transaction_id');
+            $table->foreign('accounting_transaction_id', 'acct_txn_files_transaction_fk')
+                ->references('id')->on('accounting_transactions')->cascadeOnDelete();
             $table->string('disk')->default('public');
             $table->string('path');
             $table->string('original_name');
