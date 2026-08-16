@@ -55,6 +55,30 @@ class RolePermissionSeeder extends Seeder
                 'Create Permissions',
                 'Edit Permissions',
                 'Delete Permissions',
+            ]),
+            $this->permissionsFor('Companies', [
+                'Manage Companies', 'View Companies', 'Create Companies', 'Edit Companies', 'Delete Companies',
+            ]),
+            $this->permissionsFor('Customers', [
+                'Manage Customers', 'View Customers', 'Create Customers', 'Edit Customers', 'Delete Customers',
+            ]),
+            $this->permissionsFor('Services', [
+                'Manage Services', 'View Services', 'Create Services', 'Edit Services', 'Delete Services',
+            ]),
+            $this->permissionsFor('Products', [
+                'Manage Products', 'View Products', 'Create Products', 'Edit Products', 'Delete Products',
+            ]),
+            $this->permissionsFor('Tax Classes', [
+                'Manage Tax Classes', 'View Tax Classes', 'Create Tax Classes', 'Edit Tax Classes', 'Delete Tax Classes',
+            ]),
+            $this->permissionsFor('Labels', [
+                'Manage Labels', 'View Labels', 'Create Labels', 'Edit Labels', 'Delete Labels',
+            ]),
+            $this->permissionsFor('Certificates', [
+                'Manage Certificates', 'View Certificates', 'Create Certificates', 'Delete Certificates', 'Download Certificates',
+            ]),
+            $this->permissionsFor('Transactions', [
+                'Manage Transactions', 'View Transactions', 'Create Income', 'Create Expense', 'Export Transactions',
             ])
         );
 

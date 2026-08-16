@@ -121,6 +121,16 @@
                         </div>
                     </div>
 
+                    <div class="form-floating">
+                        <textarea name="address" id="profile_address" rows="4"
+                                  class="form-control @error('address') is-invalid @enderror"
+                                  style="height: 120px">{{ old('address', $user->address) }}</textarea>
+                        <label for="profile_address">Invoice Address</label>
+                        @error('address')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                 </div>
 
                 <div>

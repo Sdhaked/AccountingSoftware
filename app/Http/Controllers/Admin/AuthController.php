@@ -235,6 +235,7 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'mobile_number_prefix' => ['nullable', 'required_with:mobile_number', 'regex:/^\+\d{1,4}$/'],
             'mobile_number' => ['nullable', 'digits_between:1,12'],
+            'address' => ['nullable', 'string', 'max:5000'],
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'mobile_number.digits_between' => 'Contact number must contain 1 to 12 digits.',

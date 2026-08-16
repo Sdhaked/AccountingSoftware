@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/csrf-token', function () {
@@ -47,6 +50,36 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::get('/profile', 'profile')->name('profile');
         Route::get('/profile/edit', 'editProfile')->name('profile.edit');
         Route::post('/profile/update', 'updateProfile')->name('profile.update');
+    });
+
+    Route::prefix('master-data/{entity}')->controller(MasterDataController::class)->group(function () {
+        Route::get('/', 'index')->name('admin.master-data.index');
+        Route::get('/create', 'create')->name('admin.master-data.create');
+        Route::post('/', 'store')->name('admin.master-data.store');
+        Route::get('/{record}', 'show')->whereNumber('record')->name('admin.master-data.show');
+        Route::get('/{record}/edit', 'edit')->whereNumber('record')->name('admin.master-data.edit');
+        Route::put('/{record}', 'update')->whereNumber('record')->name('admin.master-data.update');
+        Route::delete('/{record}', 'destroy')->whereNumber('record')->name('admin.master-data.destroy');
+    });
+
+    Route::controller(CertificateController::class)->prefix('certificates')->group(function () {
+        Route::get('/', 'index')->name('admin.certificates.index');
+        Route::get('/create', 'create')->name('admin.certificates.create');
+        Route::post('/', 'store')->name('admin.certificates.store');
+        Route::delete('/expired', 'destroyExpired')->name('admin.certificates.destroy-expired');
+        Route::get('/{certificate}', 'show')->name('admin.certificates.show');
+        Route::get('/{certificate}/download', 'download')->name('admin.certificates.download');
+        Route::delete('/{certificate}', 'destroy')->name('admin.certificates.destroy');
+    });
+
+    Route::controller(TransactionController::class)->prefix('transactions')->group(function () {
+        Route::get('/', 'index')->name('admin.transactions.index');
+        Route::get('/export', 'export')->name('admin.transactions.export');
+        Route::get('/create/{type}', 'create')->name('admin.transactions.create');
+        Route::post('/{type}', 'store')->name('admin.transactions.store');
+        Route::get('/attachments/{attachment}', 'attachment')->name('admin.transactions.attachment');
+        Route::get('/{transaction}', 'show')->name('admin.transactions.show');
+        Route::get('/{transaction}/invoice', 'invoice')->name('admin.transactions.invoice');
     });
 
     /**
