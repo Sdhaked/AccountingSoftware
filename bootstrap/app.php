@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureDeveloperAdmin;
 use App\Http\Middleware\EnsureMasterDataPermission;
 use App\Http\Middleware\EnsureTransactionCreationPermission;
 use App\Http\Middleware\EnsureUserHasPermission;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
+            'developer-admin' => EnsureDeveloperAdmin::class,
             'permission' => EnsureUserHasPermission::class,
             'master-data.permission' => EnsureMasterDataPermission::class,
             'transaction.create.permission' => EnsureTransactionCreationPermission::class,

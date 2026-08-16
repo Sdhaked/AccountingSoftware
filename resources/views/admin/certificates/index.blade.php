@@ -23,7 +23,7 @@
 
             <div class="dataTable-HD">
                 @if($canCreate)
-                    <a class="btn-sm btn-sec" href="{{ route('admin.certificates.create') }}">
+                    <a class="btn-sm btn-sec align-self-start" href="{{ route('admin.certificates.create') }}">
                         <i class="fa-solid fa-plus i-mr"></i> Create Certificate
                     </a>
                 @endif

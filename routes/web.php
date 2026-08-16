@@ -93,7 +93,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     /**
      * Master Control
      */
-    Route::prefix('master-control')->group(function () {
+    Route::prefix('master-control')->middleware('developer-admin')->group(function () {
         Route::controller(UserController::class)->prefix('users')->group(function () {
             Route::get('/', 'index')->middleware('permission:users-view-users,users-manage-users')->name('admin.users.index');
             Route::get('/create', 'create')->middleware('permission:users-create-users,users-manage-users')->name('admin.users.create');

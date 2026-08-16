@@ -23,13 +23,15 @@
     $canCertificates = $canSeeSidebar(['certificates-view-certificates', 'certificates-manage-certificates']);
     $canSettings = $canSeeSidebar(['settings-view-settings', 'settings-manage-settings']);
 
-    $canMasterUsers = $canSeeSidebar(['users-view-users', 'users-manage-users']);
-    $canMasterRoles = $canSeeSidebar(['roles-view-roles', 'roles-manage-roles']);
-    $canMasterPermissions = $canSeeSidebar(['permissions-view-permissions', 'permissions-manage-permissions']);
-    $canMasterControl = $canSeeSidebar(['master-control-view-master-control', 'master-control-manage-master-control'])
-        || $canMasterUsers
-        || $canMasterRoles
-        || $canMasterPermissions;
+    $isDeveloperAdmin = $authUser?->roleModel?->slug === 'developer-admin';
+    $canMasterUsers = $isDeveloperAdmin && $canSeeSidebar(['users-view-users', 'users-manage-users']);
+    $canMasterRoles = $isDeveloperAdmin && $canSeeSidebar(['roles-view-roles', 'roles-manage-roles']);
+    $canMasterPermissions = $isDeveloperAdmin && $canSeeSidebar(['permissions-view-permissions', 'permissions-manage-permissions']);
+    $canMasterControl = $isDeveloperAdmin
+        && ($canSeeSidebar(['master-control-view-master-control', 'master-control-manage-master-control'])
+            || $canMasterUsers
+            || $canMasterRoles
+            || $canMasterPermissions);
 
 @endphp
 
