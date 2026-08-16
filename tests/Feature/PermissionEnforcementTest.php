@@ -22,16 +22,14 @@ it('blocks direct URLs when the role lacks permission', function () {
 });
 
 it('allows a route after its permission is assigned', function () {
-    $role = Role::create(['name' => 'settings viewer', 'slug' => 'settings-viewer']);
+    $role = Role::create(['name' => 'certificate viewer', 'slug' => 'certificate-viewer']);
     $role->permissions()->attach(
-        Permission::where('slug', 'settings-view-settings')->firstOrFail()
+        Permission::where('slug', 'certificates-view-certificates')->firstOrFail()
     );
     $user = User::factory()->create(['role' => $role->id]);
 
-    $this->actingAs($user)->get(route('admin.settings.index'))->assertOk();
-    $this->actingAs($user)->put(route('admin.settings.update'), [
-        'company_name' => 'Blocked Update',
-    ])->assertForbidden();
+    $this->actingAs($user)->get(route('admin.certificates.index'))->assertOk();
+    $this->actingAs($user)->post(route('admin.certificates.store'), [])->assertForbidden();
 });
 
 it('reserves every master control screen for the developer admin role', function () {
@@ -46,19 +44,24 @@ it('reserves every master control screen for the developer admin role', function
 
         $this->actingAs($user)->get(route('admin.dashboard.index'))
             ->assertOk()
-            ->assertDontSee('Master Control');
+            ->assertDontSee('Master Control')
+            ->assertDontSee('Settings');
         $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.roles.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.permissions.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.settings.index'))->assertForbidden();
+        $this->actingAs($user)->put(route('admin.settings.update'), [])->assertForbidden();
         $this->actingAs($user)->post(route('admin.roles.store'), [])->assertForbidden();
     }
 
     $this->actingAs($developer)->get(route('admin.dashboard.index'))
         ->assertOk()
-        ->assertSee('Master Control');
+        ->assertSee('Master Control')
+        ->assertSee('Settings');
     $this->actingAs($developer)->get(route('admin.users.index'))->assertOk();
     $this->actingAs($developer)->get(route('admin.roles.index'))->assertOk();
     $this->actingAs($developer)->get(route('admin.permissions.index'))->assertOk();
+    $this->actingAs($developer)->get(route('admin.settings.index'))->assertOk();
 });
 
 it('keeps the create certificate action at compact button height', function () {

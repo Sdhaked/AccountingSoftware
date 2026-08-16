@@ -86,6 +86,11 @@ class RolePermissionSeeder extends Seeder
         );
 
         $developerOnlySlugs = $this->slugsFor([
+            'Settings' => [
+                'Manage Settings',
+                'View Settings',
+                'Update Settings',
+            ],
             'Master Control' => [
                 'Manage Master Control',
                 'View Master Control',

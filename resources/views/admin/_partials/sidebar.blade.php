@@ -21,9 +21,9 @@
     $visibleAccountingLinks = collect($accountingLinks)->filter(fn ($link) => $canSeeSidebar($link['permissions']));
     $canTransactions = $canSeeSidebar(['transactions-view-transactions', 'transactions-manage-transactions']);
     $canCertificates = $canSeeSidebar(['certificates-view-certificates', 'certificates-manage-certificates']);
-    $canSettings = $canSeeSidebar(['settings-view-settings', 'settings-manage-settings']);
 
     $isDeveloperAdmin = $authUser?->roleModel?->slug === 'developer-admin';
+    $canSettings = $isDeveloperAdmin && $canSeeSidebar(['settings-view-settings', 'settings-manage-settings']);
     $canMasterUsers = $isDeveloperAdmin && $canSeeSidebar(['users-view-users', 'users-manage-users']);
     $canMasterRoles = $isDeveloperAdmin && $canSeeSidebar(['roles-view-roles', 'roles-manage-roles']);
     $canMasterPermissions = $isDeveloperAdmin && $canSeeSidebar(['permissions-view-permissions', 'permissions-manage-permissions']);
@@ -31,7 +31,8 @@
         && ($canSeeSidebar(['master-control-view-master-control', 'master-control-manage-master-control'])
             || $canMasterUsers
             || $canMasterRoles
-            || $canMasterPermissions);
+            || $canMasterPermissions
+            || $canSettings);
 
 @endphp
 
@@ -85,15 +86,6 @@
                 </li>
             @endif
 
-            @if ($canSettings)
-                <li class="main-li">
-                    <a href="{{ route('admin.settings.index') }}" class="nav-link navJS">
-                        <i class="fa-solid fa-gear"></i>
-                        <span class="link-name">Settings</span>
-                    </a>
-                </li>
-            @endif
-
             @if ($canMasterControl)
                 <hr style="margin: 1rem  22px; color:var(--color-border-100);">
 
@@ -124,6 +116,14 @@
                                 <a class="dropdown-item nav-link navJS" href="{{ route('admin.permissions.index') }}">
                                     <i class="fa-regular fa-circle-dot"></i>
                                     <span class="link-name"><i class="fa-solid fa-minus"></i> Permissions</span>
+                                </a>
+                            </li>
+                        @endif
+                        @if ($canSettings)
+                            <li class="main-li">
+                                <a class="dropdown-item nav-link navJS" href="{{ route('admin.settings.index') }}">
+                                    <i class="fa-solid fa-gear"></i>
+                                    <span class="link-name"><i class="fa-solid fa-minus"></i> Settings</span>
                                 </a>
                             </li>
                         @endif

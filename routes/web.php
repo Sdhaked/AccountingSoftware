@@ -85,7 +85,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     /**
      * Settings
      */
-    Route::controller(SettingController::class)->prefix('settings')->group(function () {
+    Route::controller(SettingController::class)->prefix('settings')->middleware('developer-admin')->group(function () {
         Route::get('/', 'index')->middleware('permission:settings-view-settings,settings-manage-settings')->name('admin.settings.index');
         Route::put('/', 'update')->middleware('permission:settings-update-settings,settings-manage-settings')->name('admin.settings.update');
     });
