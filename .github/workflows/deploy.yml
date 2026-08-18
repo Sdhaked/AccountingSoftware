@@ -1,0 +1,165 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test and Build
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: accounting_software
+          MYSQL_USER: accounting_user
+          MYSQL_PASSWORD: accounting_password
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, bcmath, ctype, fileinfo, json, openssl, pdo, pdo_mysql, tokenizer, xml, gd, zip
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+        env:
+          APP_ENV: testing
+          APP_DEBUG: false
+          APP_URL: http://localhost
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: accounting_software
+          DB_USERNAME: accounting_user
+          DB_PASSWORD: accounting_password
+          SESSION_DRIVER: database
+          CACHE_STORE: database
+          QUEUE_CONNECTION: database
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+        env:
+          APP_ENV: testing
+          APP_DEBUG: false
+          APP_URL: http://localhost
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: accounting_software
+          DB_USERNAME: accounting_user
+          DB_PASSWORD: accounting_password
+          SESSION_DRIVER: database
+          CACHE_STORE: database
+          QUEUE_CONNECTION: database
+
+      - name: Run test suite
+        run: php artisan test
+        env:
+          APP_ENV: testing
+          APP_DEBUG: false
+          APP_URL: http://localhost
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: accounting_software
+          DB_USERNAME: accounting_user
+          DB_PASSWORD: accounting_password
+          SESSION_DRIVER: database
+          CACHE_STORE: database
+          QUEUE_CONNECTION: database
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Install production PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Package deployment artifact
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.env \
+            --exclude=node_modules \
+            --exclude=tests \
+            --exclude=storage/logs/* \
+            --exclude=storage/framework/cache/* \
+            --exclude=storage/framework/sessions/* \
+            --exclude=storage/framework/testing/* \
+            --exclude=storage/framework/views/* \
+            -czf release.tar.gz .
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload release package
+        run: |
+          scp -P "${{ secrets.SSH_PORT }}" release.tar.gz "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/accounting-software-release.tar.gz"
+
+      - name: Upload remote deploy script
+        run: |
+          scp -P "${{ secrets.SSH_PORT }}" scripts/deploy.sh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/accounting-software-deploy.sh"
+
+      - name: Run remote deployment
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "chmod +x /tmp/accounting-software-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' PHP_BIN='${{ secrets.PHP_BIN }}' /tmp/accounting-software-deploy.sh"

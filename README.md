@@ -37,3 +37,41 @@ Run the automated suite with:
 ```bash
 php artisan test
 ```
+
+## CI/CD Deployment
+
+The repository now includes `.github/workflows/deploy.yml` for GitHub Actions based CI/CD and `scripts/deploy.sh` for the server-side release step.
+
+### 1. One-time server setup
+
+1. Create the project directory on the server, for example `/www/wwwroot/accounts.santrains.com`.
+2. Upload this project once or leave the directory empty.
+3. Create the production `.env` file inside the deploy path.
+4. Make sure the target PHP binary can run Artisan commands. In aaPanel this is often something like `/www/server/php/82/bin/php`.
+5. Make sure the SSH user has write access to the deploy path.
+
+### 2. GitHub repository secrets
+
+Add these repository secrets before running the workflow:
+
+- `SSH_HOST`: server IP or hostname
+- `SSH_PORT`: usually `22`
+- `SSH_USER`: SSH username
+- `SSH_PRIVATE_KEY`: private key for the deploy user
+- `DEPLOY_PATH`: absolute path on the server, for example `/www/wwwroot/accounts.santrains.com`
+- `PHP_BIN`: server PHP binary path, for example `/www/server/php/82/bin/php`
+
+### 3. Deployment flow
+
+On every push to `main`, GitHub Actions will:
+
+1. Install PHP and Node dependencies
+2. Run migrations and tests in CI
+3. Build frontend assets
+4. Package the production-ready application
+5. Upload it to the server over SSH
+6. Run the remote deploy script, migrations, caches, and storage link
+
+### 4. Important note
+
+The workflow does not create the production `.env` file for you. Keep that file only on the server and do not commit it to git.
