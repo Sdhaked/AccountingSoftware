@@ -44,6 +44,12 @@ jobs:
           node-version: "20"
           cache: npm
 
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Prepare application environment
         run: |
           cp .env.example .env
@@ -61,12 +67,6 @@ jobs:
           SESSION_DRIVER: database
           CACHE_STORE: database
           QUEUE_CONNECTION: database
-
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Install Node dependencies
-        run: npm ci
 
       - name: Run database migrations
         run: php artisan migrate --force
