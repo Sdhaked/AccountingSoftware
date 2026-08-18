@@ -50,6 +50,7 @@ trap cleanup EXIT
 
 find . -mindepth 1 -maxdepth 1 \
   ! -name ".env" \
+  ! -name ".user.ini" \
   ! -name "storage" \
   ! -name "bootstrap" \
   -exec rm -rf {} +
