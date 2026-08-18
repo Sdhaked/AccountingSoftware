@@ -103,8 +103,27 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Reset bootstrap cache before production install
+        run: rm -f bootstrap/cache/*.php
+
       - name: Install production PHP dependencies
-        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+      - name: Refresh package discovery for production artifact
+        run: php artisan package:discover --ansi
+        env:
+          APP_ENV: testing
+          APP_DEBUG: false
+          APP_URL: http://localhost
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: accounting_software
+          DB_USERNAME: accounting_user
+          DB_PASSWORD: accounting_password
+          SESSION_DRIVER: database
+          CACHE_STORE: database
+          QUEUE_CONNECTION: database
 
       - name: Package deployment artifact
         run: |
