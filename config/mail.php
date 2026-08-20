@@ -1,5 +1,17 @@
 <?php
 
+$mailEncryption = env('MAIL_ENCRYPTION');
+$mailScheme = env('MAIL_SCHEME');
+
+if (! filled($mailScheme) && $mailEncryption === 'ssl') {
+    $mailScheme = 'smtps';
+}
+
+$mailRequireTls = filter_var(
+    env('MAIL_REQUIRE_TLS', $mailEncryption === 'tls'),
+    FILTER_VALIDATE_BOOL
+);
+
 return [
 
     /*
@@ -39,13 +51,13 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            'scheme' => $mailScheme,
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'require_tls' => env('MAIL_REQUIRE_TLS', false),
+            'require_tls' => $mailRequireTls,
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
