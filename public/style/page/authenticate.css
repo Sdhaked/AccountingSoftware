@@ -20,3 +20,45 @@
   width: 10rem;
   margin: auto;
 }
+
+.auth-box .auth-logo-account {
+  width: 13rem;
+  max-width: 70%;
+  margin-bottom: 0.75rem;
+}
+
+.auth-message {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.auth-message-success {
+  color: #2ecc71;
+}
+
+.auth-message-error {
+  color: #ff6b6b;
+}
+
+.auth-message-info {
+  color: #8bb4ff;
+}
+
+.auth-otp-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.auth-link-btn {
+  width: auto;
+  padding: 0;
+  color: var(--color-text-100);
+  font-size: 0.9rem;
+}
+
+.auth-link-btn:not(:disabled) {
+  color: var(--color-primary);
+}

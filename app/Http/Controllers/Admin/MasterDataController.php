@@ -47,7 +47,7 @@ class MasterDataController extends Controller
     public function store(Request $request, string $entity)
     {
         $definition = $this->definition($entity);
-        $validated = Validator::make($request->all(), $this->rules($entity, $request))->validate();
+        $validated = Validator::make($request->all(), $this->rules($entity, $request), $this->messages())->validate();
         $definition['model']::create($validated);
 
         return redirect()->route('admin.master-data.index', $entity)
@@ -75,7 +75,7 @@ class MasterDataController extends Controller
     {
         $definition = $this->definition($entity);
         $item = $definition['model']::findOrFail($record);
-        $validated = Validator::make($request->all(), $this->rules($entity, $request, $record))->validate();
+        $validated = Validator::make($request->all(), $this->rules($entity, $request, $record), $this->messages())->validate();
         $item->update($validated);
 
         return redirect()->route('admin.master-data.index', $entity)
@@ -108,7 +108,7 @@ class MasterDataController extends Controller
                 'fields' => [
                     ['name' => 'name', 'label' => 'Company Name', 'type' => 'text', 'required' => true],
                     ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'required' => true],
-                    ['name' => 'phone', 'label' => 'Phone Number', 'type' => 'tel'],
+                    ['name' => 'phone', 'label' => 'Phone Number', 'type' => 'tel', 'digits_only' => true, 'maxlength' => 15],
                     ['name' => 'email', 'label' => 'Email Address', 'type' => 'email'],
                 ],
             ],
@@ -117,7 +117,7 @@ class MasterDataController extends Controller
                 'with' => ['company'], 'search' => ['name', 'email', 'phone'],
                 'fields' => [
                     ['name' => 'name', 'label' => 'Customer Name', 'type' => 'text', 'required' => true],
-                    ['name' => 'phone', 'label' => 'Phone Number', 'type' => 'tel'],
+                    ['name' => 'phone', 'label' => 'Phone Number', 'type' => 'tel', 'digits_only' => true, 'maxlength' => 15],
                     ['name' => 'email', 'label' => 'Email Address', 'type' => 'email', 'required' => true],
                     ['name' => 'billing_address', 'label' => 'Billing Address', 'type' => 'textarea', 'required' => true],
                     ['name' => 'company_id', 'label' => 'Company', 'type' => 'select', 'required' => true,
@@ -184,16 +184,18 @@ class MasterDataController extends Controller
     {
         $uniqueName = fn (string $table) => Rule::unique($table, 'name')->ignore($record);
 
+        $phoneRules = ['nullable', 'digits_between:1,15'];
+
         return match ($entity) {
             'companies' => [
                 'name' => ['required', 'string', 'max:255', $uniqueName('companies')],
                 'address' => ['required', 'string', 'max:5000'],
-                'phone' => ['nullable', 'string', 'max:30'],
+                'phone' => $phoneRules,
                 'email' => ['nullable', 'email', 'max:255'],
             ],
             'customers' => [
                 'name' => ['required', 'string', 'max:255'],
-                'phone' => ['nullable', 'string', 'max:30'],
+                'phone' => $phoneRules,
                 'email' => ['required', 'email', 'max:255'],
                 'billing_address' => ['required', 'string', 'max:5000'],
                 'company_id' => ['required', 'integer', 'exists:companies,id'],
@@ -220,5 +222,12 @@ class MasterDataController extends Controller
             ],
             default => abort(404),
         };
+    }
+
+    private function messages(): array
+    {
+        return [
+            'phone.digits_between' => 'Phone number must contain only digits and be 1 to 15 digits long.',
+        ];
     }
 }
