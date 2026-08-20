@@ -47,6 +47,8 @@
                             @else
                                 <input type="{{ $field['type'] }}" name="{{ $field['name'] }}" id="field_{{ $field['name'] }}"
                                        value="{{ $value }}" step="{{ $field['step'] ?? '' }}" min="{{ $field['type'] === 'number' ? 0 : '' }}"
+                                       @isset($field['maxlength']) maxlength="{{ $field['maxlength'] }}" @endisset
+                                       @if($field['digits_only'] ?? false) inputmode="numeric" pattern="[0-9]*" data-digits-only="true" @endif
                                        class="form-control @error($field['name']) is-invalid @enderror"
                                        @required($field['required'] ?? false)>
                             @endif
@@ -62,4 +64,12 @@
             </form>
         </main>
     </section>
+
+    <script>
+        document.querySelectorAll('[data-digits-only="true"]').forEach(function (input) {
+            input.addEventListener('input', function () {
+                input.value = input.value.replace(/\D/g, '').slice(0, input.maxLength || undefined);
+            });
+        });
+    </script>
 @endsection
