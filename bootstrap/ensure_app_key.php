@@ -31,7 +31,6 @@ if (! function_exists('bootstrapEnsureAppKey')) {
             $appKeyLineFound = true;
             $currentValue = trim(substr($line, strlen('APP_KEY=')), " \t\n\r\0\x0B\"'");
             if ($currentValue !== '') {
-                putenv('APP_KEY='.$currentValue);
                 $_ENV['APP_KEY'] = $currentValue;
                 $_SERVER['APP_KEY'] = $currentValue;
 
@@ -54,7 +53,6 @@ if (! function_exists('bootstrapEnsureAppKey')) {
             return;
         }
 
-        putenv('APP_KEY='.$generatedKey);
         $_ENV['APP_KEY'] = $generatedKey;
         $_SERVER['APP_KEY'] = $generatedKey;
     }
