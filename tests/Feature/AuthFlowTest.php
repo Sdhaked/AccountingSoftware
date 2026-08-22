@@ -77,3 +77,14 @@ it('does not send an OTP to a deactivated user', function () {
 
     Mail::assertNothingSent();
 });
+
+it('shows a clear message when the login email is not registered', function () {
+    Mail::fake();
+
+    $this->postJson(route('login.otp.send'), ['email' => 'missing@example.com'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['email'])
+        ->assertJsonPath('message', 'This email is not registered.');
+
+    Mail::assertNothingSent();
+});

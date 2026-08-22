@@ -29,20 +29,31 @@
 
 .auth-message {
   margin-bottom: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sec);
   font-size: 0.95rem;
   font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
 }
 
 .auth-message-success {
-  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.14);
+  border-color: rgba(46, 204, 113, 0.45);
+  color: #74f1a3 !important;
 }
 
 .auth-message-error {
-  color: #ff6b6b;
+  background: rgba(255, 77, 109, 0.16);
+  border-color: rgba(255, 77, 109, 0.55);
+  color: #ffb3c0 !important;
 }
 
 .auth-message-info {
-  color: #8bb4ff;
+  background: rgba(139, 180, 255, 0.14);
+  border-color: rgba(139, 180, 255, 0.45);
+  color: #bed4ff !important;
 }
 
 .auth-otp-actions {

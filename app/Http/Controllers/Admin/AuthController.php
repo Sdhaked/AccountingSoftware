@@ -43,6 +43,8 @@ class AuthController extends Controller
                 'email',
                 Rule::exists('users', 'email')->where(fn ($query) => $query->whereNull('deleted_at')),
             ],
+        ], [
+            'email.exists' => 'This email is not registered.',
         ]);
 
         $existingOtp = DB::table('login_otps')->where('email', $request->email)->first();
@@ -103,6 +105,8 @@ class AuthController extends Controller
                 Rule::exists('users', 'email')->where(fn ($query) => $query->whereNull('deleted_at')),
             ],
             'otp' => 'required|digits:6',
+        ], [
+            'email.exists' => 'This email is not registered.',
         ]);
 
         $otpRecord = DB::table('login_otps')

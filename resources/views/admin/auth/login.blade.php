@@ -10,12 +10,12 @@
                 <img src="{{ asset('images/account-logo.png') }}" alt="{{ config('app.name') }} logo" class="logo-img auth-logo-account"/>
 
                 @if (session('success'))
-                    <div class="auth-message auth-message-success">
+                    <div class="auth-message auth-message-success" role="alert">
                         {{ session('success') }}
                     </div>
                 @endif
 
-                <div id="otpMessage" class="auth-message" style="display:none;"></div>
+                <div id="otpMessage" class="auth-message" role="alert" aria-live="polite" style="display:none;"></div>
 
                 <div class="form-floating mb-1" id="emailBox">
                     <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
