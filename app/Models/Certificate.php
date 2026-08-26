@@ -11,6 +11,8 @@ class Certificate extends Model
         'certificate_number',
         'customer_id',
         'company_id',
+        'course_name',
+        'instructor_name',
         'issued_at',
         'expires_at',
     ];

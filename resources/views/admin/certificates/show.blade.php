@@ -20,6 +20,8 @@
             <tr><th>Expiry Date</th><td>{{ $certificate->expires_at->format('d M Y') }}</td></tr>
             <tr><th>Customer Name</th><td>{{ $certificate->customer->name }}</td></tr>
             <tr><th>Company</th><td>{{ $certificate->company->name }}</td></tr>
+            <tr><th>Course</th><td>{{ $certificate->course_name }}</td></tr>
+            <tr><th>Instructor</th><td>{{ $certificate->instructor_name }}</td></tr>
         </tbody></table></div>
         <a class="btn-md btn-sec" href="{{ route('admin.certificates.download', $certificate) }}"><i class="fa-solid fa-download i-mr"></i> Download PDF</a>
         <a class="btn-md btn-sec-outline" href="{{ route('admin.certificates.index') }}">Back</a>

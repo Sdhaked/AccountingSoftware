@@ -7,6 +7,7 @@ use App\Models\AppSetting;
 use App\Models\Certificate;
 use App\Models\Company;
 use App\Models\Customer;
+use App\Models\Service;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,8 +33,9 @@ class CertificateController extends Controller
     {
         $customers = Customer::with('company')->orderBy('name')->get();
         $companies = Company::orderBy('name')->get();
+        $courseNames = Service::query()->distinct()->orderBy('name')->pluck('name');
 
-        return view('admin.certificates.create', compact('customers', 'companies'));
+        return view('admin.certificates.create', compact('customers', 'companies', 'courseNames'));
     }
 
     public function store(Request $request)
@@ -41,9 +43,16 @@ class CertificateController extends Controller
         $validated = $request->validate([
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'company_id' => ['required', 'integer', 'exists:companies,id'],
+            'course_name' => ['nullable', 'string', 'max:255'],
+            'instructor_name' => ['nullable', 'string', 'max:255'],
             'issued_at' => ['required', 'date'],
             'expires_at' => ['required', 'date', 'after_or_equal:issued_at'],
         ]);
+
+        $validated['course_name'] = trim((string) ($validated['course_name'] ?? ''))
+            ?: config('santrains.default_course');
+        $validated['instructor_name'] = trim((string) ($validated['instructor_name'] ?? ''))
+            ?: config('santrains.instructor_name');
 
         $customer = Customer::findOrFail($validated['customer_id']);
         if ($customer->company_id !== (int) $validated['company_id']) {
@@ -53,7 +62,7 @@ class CertificateController extends Controller
         DB::transaction(function () use ($validated) {
             $dailyNumber = Certificate::whereDate('issued_at', $validated['issued_at'])
                 ->lockForUpdate()->count() + 1;
-            $certificateNumber = date('Y-m-d', strtotime($validated['issued_at'])).'-'.$dailyNumber;
+            $certificateNumber = date('dmY', strtotime($validated['issued_at'])).$dailyNumber;
 
             Certificate::create($validated + ['certificate_number' => $certificateNumber]);
         });
@@ -74,7 +83,7 @@ class CertificateController extends Controller
         $sponsorImage = AppSetting::query()->first()?->sponsorImageDataUri();
 
         return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'sponsorImage'))
-            ->setPaper('a4', 'landscape')
+            ->setPaper('a4', 'portrait')
             ->download("certificate-{$certificate->certificate_number}.pdf");
     }
 

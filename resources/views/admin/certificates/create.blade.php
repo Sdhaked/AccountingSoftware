@@ -41,6 +41,23 @@
                         @error('company_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-floating">
+                        <input class="form-control @error('course_name') is-invalid @enderror" type="text"
+                               id="course_name" name="course_name" list="certificate_courses"
+                               value="{{ old('course_name', config('santrains.default_course')) }}" maxlength="255" required>
+                        <label for="course_name">Course Name*</label>
+                        <datalist id="certificate_courses">
+                            @foreach($courseNames as $courseName)<option value="{{ $courseName }}"></option>@endforeach
+                        </datalist>
+                        @error('course_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-floating">
+                        <input class="form-control @error('instructor_name') is-invalid @enderror" type="text"
+                               id="instructor_name" name="instructor_name"
+                               value="{{ old('instructor_name', config('santrains.instructor_name')) }}" maxlength="255" required>
+                        <label for="instructor_name">Instructor Name*</label>
+                        @error('instructor_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-floating">
                         <input class="form-control @error('issued_at') is-invalid @enderror" type="date" id="issued_at" name="issued_at" value="{{ old('issued_at', today()->format('Y-m-d')) }}" required>
                         <label for="issued_at">Date of Issue*</label>
                         @error('issued_at')<div class="invalid-feedback">{{ $message }}</div>@enderror

@@ -101,6 +101,7 @@ mkdir -p \
   bootstrap/cache \
   public/build \
   storage/app/private \
+  storage/fonts \
   storage/framework/cache/data \
   storage/framework/sessions \
   storage/framework/testing \
@@ -137,6 +138,7 @@ find . -mindepth 1 -maxdepth 1 \
 tar -xzf "$RELEASE_ARCHIVE" -C "$DEPLOY_PATH"
 
 find storage -type d -exec chmod 775 {} +
+chmod 777 storage/fonts
 find bootstrap/cache -type d -exec chmod 775 {} +
 
 "$PHP_BIN" artisan migrate --force
