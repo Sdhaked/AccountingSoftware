@@ -6,6 +6,8 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -96,4 +98,27 @@ it('renders a master data detail page', function () {
         ->assertOk()
         ->assertSee('Company Details')
         ->assertSee('San Trains');
+});
+
+it('stores and displays an uploaded company logo', function () {
+    Storage::fake('public');
+
+    $this->actingAs($this->user)
+        ->post(route('admin.master-data.store', 'companies'), [
+            'name' => 'Logo Client',
+            'address' => 'Dublin',
+            'email' => 'logo@client.test',
+            'logo_path' => UploadedFile::fake()->image('client-logo.png', 220, 120),
+        ])
+        ->assertRedirect(route('admin.master-data.index', 'companies'));
+
+    $company = Company::where('name', 'Logo Client')->firstOrFail();
+
+    expect($company->logo_path)->toStartWith('company-logos/');
+    Storage::disk('public')->assertExists($company->logo_path);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.master-data.show', ['companies', $company->id]))
+        ->assertOk()
+        ->assertSee('storage/'.$company->logo_path, false);
 });

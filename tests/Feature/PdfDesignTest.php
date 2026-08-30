@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -32,6 +33,10 @@ beforeEach(function () {
 
 it('downloads the branded San Trains invoice as a PDF', function () {
     config(['santrains.currency_symbol' => '€']);
+    Storage::fake('public');
+    $logoContents = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGaWjR9awAAAABJRU5ErkJggg==');
+    Storage::disk('public')->put('company-logos/client-logo.png', $logoContents);
+    $this->company->update(['logo_path' => 'company-logos/client-logo.png']);
 
     $transaction = AccountingTransaction::create([
         'reference_number' => '010820261',
@@ -64,10 +69,12 @@ it('downloads the branded San Trains invoice as a PDF', function () {
 
     $html = view('admin.transactions.invoice', [
         'transaction' => $transaction->load('items'),
-        'sponsorImage' => null,
+        'brandLogo' => $transaction->company->logoDataUri(),
     ])->render();
 
-    expect($html)->toContain('€150.00/-');
+    expect($html)
+        ->toContain('€150.00/-')
+        ->toContain(base64_encode($logoContents));
 
     $response = $this->actingAs($this->user)->get(route('admin.transactions.invoice', $transaction));
 
@@ -76,6 +83,11 @@ it('downloads the branded San Trains invoice as a PDF', function () {
 });
 
 it('stores certificate design fields and downloads the portrait PDF', function () {
+    Storage::fake('public');
+    $logoContents = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGaWjR9awAAAABJRU5ErkJggg==');
+    Storage::disk('public')->put('company-logos/client-logo.png', $logoContents);
+    $this->company->update(['logo_path' => 'company-logos/client-logo.png']);
+
     $this->actingAs($this->user)->post(route('admin.certificates.store'), [
         'customer_id' => $this->customer->id,
         'company_id' => $this->company->id,
@@ -94,4 +106,11 @@ it('stores certificate design fields and downloads the portrait PDF', function (
 
     $response->assertOk()->assertDownload('certificate-100820261.pdf');
     expect(str_starts_with($response->getContent(), '%PDF-'))->toBeTrue();
+
+    $html = view('admin.certificates.pdf', [
+        'certificate' => $certificate->load(['customer', 'company']),
+        'brandLogo' => $certificate->company->logoDataUri(),
+    ])->render();
+
+    expect($html)->toContain(base64_encode($logoContents));
 });

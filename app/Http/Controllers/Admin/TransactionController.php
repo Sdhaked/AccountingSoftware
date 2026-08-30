@@ -342,10 +342,11 @@ class TransactionController extends Controller
     public function invoice(AccountingTransaction $transaction)
     {
         abort_unless($transaction->type === 'income', 404);
-        $transaction->load('items');
-        $sponsorImage = AppSetting::query()->first()?->sponsorImageDataUri();
+        $transaction->load(['items', 'company']);
+        $brandLogo = $transaction->company?->logoDataUri()
+            ?? AppSetting::query()->first()?->sponsorImageDataUri();
 
-        return Pdf::loadView('admin.transactions.invoice', compact('transaction', 'sponsorImage'))
+        return Pdf::loadView('admin.transactions.invoice', compact('transaction', 'brandLogo'))
             ->download("invoice-{$transaction->reference_number}.pdf");
     }
 
@@ -358,7 +359,7 @@ class TransactionController extends Controller
         }
 
         try {
-            $transaction->load('items');
+            $transaction->load(['items', 'company']);
             $this->emailInvoice($transaction);
         } catch (\Throwable $exception) {
             report($exception);
@@ -559,8 +560,9 @@ class TransactionController extends Controller
     {
         $setting = AppSetting::query()->first();
         $setting?->applyMailConfiguration();
-        $sponsorImage = $setting?->sponsorImageDataUri();
-        $pdf = Pdf::loadView('admin.transactions.invoice', compact('transaction', 'sponsorImage'));
+        $transaction->loadMissing(['items', 'company']);
+        $brandLogo = $transaction->company?->logoDataUri() ?? $setting?->sponsorImageDataUri();
+        $pdf = Pdf::loadView('admin.transactions.invoice', compact('transaction', 'brandLogo'));
         Mail::to($transaction->customer_email)->send(
             new TransactionInvoiceMail($transaction, $pdf->output())
         );

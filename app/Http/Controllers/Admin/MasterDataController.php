@@ -9,8 +9,10 @@ use App\Models\Label;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\TaxClass;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -48,7 +50,16 @@ class MasterDataController extends Controller
     {
         $definition = $this->definition($entity);
         $validated = Validator::make($request->all(), $this->rules($entity, $request), $this->messages())->validate();
-        $definition['model']::create($validated);
+        $storedFiles = [];
+
+        try {
+            $validated = $this->storeUploadedFiles($definition, $validated, $request, $storedFiles);
+            $definition['model']::create($validated);
+        } catch (\Throwable $exception) {
+            $this->deleteStoredFiles($storedFiles);
+
+            throw $exception;
+        }
 
         return redirect()->route('admin.master-data.index', $entity)
             ->with('success', "{$definition['singular']} created successfully.");
@@ -76,7 +87,19 @@ class MasterDataController extends Controller
         $definition = $this->definition($entity);
         $item = $definition['model']::findOrFail($record);
         $validated = Validator::make($request->all(), $this->rules($entity, $request, $record), $this->messages())->validate();
-        $item->update($validated);
+        $storedFiles = [];
+        $oldFiles = [];
+
+        try {
+            $validated = $this->storeUploadedFiles($definition, $validated, $request, $storedFiles, $item, $oldFiles);
+            $item->update($validated);
+        } catch (\Throwable $exception) {
+            $this->deleteStoredFiles($storedFiles);
+
+            throw $exception;
+        }
+
+        $this->deleteStoredFiles($oldFiles);
 
         return redirect()->route('admin.master-data.index', $entity)
             ->with('success', "{$definition['singular']} updated successfully.");
@@ -85,9 +108,11 @@ class MasterDataController extends Controller
     public function destroy(string $entity, int $record)
     {
         $definition = $this->definition($entity);
+        $item = $definition['model']::findOrFail($record);
+        $storedFiles = $this->storedUploadFiles($definition, $item);
 
         try {
-            $definition['model']::findOrFail($record)->delete();
+            $item->delete();
         } catch (QueryException $exception) {
             if (in_array((string) $exception->getCode(), ['23000', '23503'], true)) {
                 return back()->with('error', "This {$definition['singular']} is in use and cannot be deleted.");
@@ -95,6 +120,8 @@ class MasterDataController extends Controller
 
             throw $exception;
         }
+
+        $this->deleteStoredFiles($storedFiles);
 
         return back()->with('success', "{$definition['singular']} deleted successfully.");
     }
@@ -110,6 +137,9 @@ class MasterDataController extends Controller
                     ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'required' => true],
                     ['name' => 'phone', 'label' => 'Phone Number', 'type' => 'tel', 'digits_only' => true, 'maxlength' => 15],
                     ['name' => 'email', 'label' => 'Email Address', 'type' => 'email'],
+                    ['name' => 'logo_path', 'label' => 'Company Logo', 'type' => 'file', 'format' => 'image',
+                        'accept' => 'image/jpeg,image/png,image/webp', 'directory' => 'company-logos',
+                        'help' => 'JPG, PNG or WebP, maximum 4 MB.'],
                 ],
             ],
             'customers' => [
@@ -192,6 +222,7 @@ class MasterDataController extends Controller
                 'address' => ['required', 'string', 'max:5000'],
                 'phone' => $phoneRules,
                 'email' => ['nullable', 'email', 'max:255'],
+                'logo_path' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             ],
             'customers' => [
                 'name' => ['required', 'string', 'max:255'],
@@ -229,5 +260,64 @@ class MasterDataController extends Controller
         return [
             'phone.digits_between' => 'Phone number must contain only digits and be 1 to 15 digits long.',
         ];
+    }
+
+    private function storeUploadedFiles(
+        array $definition,
+        array $validated,
+        Request $request,
+        array &$storedFiles,
+        ?Model $item = null,
+        array &$oldFiles = []
+    ): array {
+        foreach ($this->fileFields($definition) as $field) {
+            $name = $field['name'];
+
+            if (! $request->hasFile($name)) {
+                unset($validated[$name]);
+                continue;
+            }
+
+            $disk = $field['disk'] ?? 'public';
+            $path = $request->file($name)->store($field['directory'] ?? $name, $disk);
+            $validated[$name] = $path;
+            $storedFiles[] = [$disk, $path];
+
+            $oldPath = $item?->getAttribute($name);
+            if ($oldPath && $oldPath !== $path) {
+                $oldFiles[] = [$disk, $oldPath];
+            }
+        }
+
+        return $validated;
+    }
+
+    private function storedUploadFiles(array $definition, Model $item): array
+    {
+        $files = [];
+
+        foreach ($this->fileFields($definition) as $field) {
+            $path = $item->getAttribute($field['name']);
+            if ($path) {
+                $files[] = [$field['disk'] ?? 'public', $path];
+            }
+        }
+
+        return $files;
+    }
+
+    private function deleteStoredFiles(array $files): void
+    {
+        foreach ($files as [$disk, $path]) {
+            Storage::disk($disk)->delete($path);
+        }
+    }
+
+    private function fileFields(array $definition): array
+    {
+        return array_values(array_filter(
+            $definition['fields'],
+            fn (array $field) => ($field['type'] ?? null) === 'file'
+        ));
     }
 }

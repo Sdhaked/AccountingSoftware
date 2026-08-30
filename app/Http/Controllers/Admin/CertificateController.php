@@ -80,9 +80,10 @@ class CertificateController extends Controller
     public function download(Certificate $certificate)
     {
         $certificate->load(['customer', 'company']);
-        $sponsorImage = AppSetting::query()->first()?->sponsorImageDataUri();
+        $brandLogo = $certificate->company?->logoDataUri()
+            ?? AppSetting::query()->first()?->sponsorImageDataUri();
 
-        return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'sponsorImage'))
+        return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'brandLogo'))
             ->setPaper('a4', 'portrait')
             ->download("certificate-{$certificate->certificate_number}.pdf");
     }

@@ -62,6 +62,12 @@
                                     <div class="data-label">{{ $field['label'] }}</div>
                                     @if(($field['format'] ?? null) === 'money')
                                         {{ $currencySymbol }}{{ number_format((float) $value, 2) }}
+                                    @elseif(($field['format'] ?? null) === 'image')
+                                        @if(filled($value))
+                                            <img src="{{ asset('storage/'.$value) }}" class="thumb-img x2" alt="{{ $field['label'] }}">
+                                        @else
+                                            N/A
+                                        @endif
                                     @elseif(($field['format'] ?? null) === 'percentage')
                                         {{ rtrim(rtrim(number_format((float) $value, 3), '0'), '.') }}%
                                     @else

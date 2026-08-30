@@ -4,7 +4,7 @@
 
         return 'data:image/png;base64,'.base64_encode((string) file_get_contents($path));
     };
-    $logo = $sponsorImage ?: $asset('logo.png');
+    $logo = ($brandLogo ?? null) ?: ($sponsorImage ?? null) ?: $asset('logo.png');
     $fontData = 'data:font/truetype;base64,'.base64_encode((string) file_get_contents(
         public_path('fonts/santrains/GreatVibes-Regular.ttf')
     ));
