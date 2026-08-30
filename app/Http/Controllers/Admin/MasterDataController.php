@@ -139,7 +139,7 @@ class MasterDataController extends Controller
                     ['name' => 'email', 'label' => 'Email Address', 'type' => 'email'],
                     ['name' => 'logo_path', 'label' => 'Company Logo', 'type' => 'file', 'format' => 'image',
                         'accept' => 'image/jpeg,image/png,image/webp', 'directory' => 'company-logos',
-                        'help' => 'JPG, PNG or WebP, maximum 4 MB.'],
+                        'help' => 'JPG, PNG or WebP, maximum 4 MB.', 'hide_on_index' => true],
                 ],
             ],
             'customers' => [

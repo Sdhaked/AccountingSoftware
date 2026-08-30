@@ -121,4 +121,11 @@ it('stores and displays an uploaded company logo', function () {
         ->get(route('admin.master-data.show', ['companies', $company->id]))
         ->assertOk()
         ->assertSee('storage/'.$company->logo_path, false);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.master-data.index', 'companies'))
+        ->assertOk()
+        ->assertSee('Logo Client')
+        ->assertDontSee('Company Logo')
+        ->assertDontSee('storage/'.$company->logo_path, false);
 });

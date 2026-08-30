@@ -11,6 +11,10 @@
 @section('body')
     @php
         $currencySymbol = config('santrains.currency_symbol', '€');
+        $indexFields = array_values(array_filter(
+            $definition['fields'],
+            fn (array $field) => ! ($field['hide_on_index'] ?? false)
+        ));
         $canCreate = auth()->user()->hasAnyPermission(["{$entity}-create-{$entity}", "{$entity}-manage-{$entity}"]);
         $canEdit = auth()->user()->hasAnyPermission(["{$entity}-edit-{$entity}", "{$entity}-manage-{$entity}"]);
         $canDelete = auth()->user()->hasAnyPermission(["{$entity}-delete-{$entity}", "{$entity}-manage-{$entity}"]);
@@ -42,7 +46,7 @@
                     <thead>
                     <tr>
                         <th>S No.</th>
-                        @foreach($definition['fields'] as $field)
+                        @foreach($indexFields as $field)
                             <th>{{ $field['label'] }}</th>
                         @endforeach
                         <th>Actions</th>
@@ -52,7 +56,7 @@
                     @forelse($records as $index => $record)
                         <tr>
                             <td><div class="data-label">S No.</div>{{ $records->firstItem() + $index }}</td>
-                            @foreach($definition['fields'] as $field)
+                            @foreach($indexFields as $field)
                                 @php
                                     $value = isset($field['relation'])
                                         ? data_get($record, $field['relation'] . '.name')
@@ -97,7 +101,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="{{ count($definition['fields']) + 2 }}" class="text-center">No records found.</td></tr>
+                        <tr><td colspan="{{ count($indexFields) + 2 }}" class="text-center">No records found.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
