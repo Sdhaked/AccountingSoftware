@@ -108,6 +108,28 @@ it('creates updates and deletes an income transaction', function () {
     $this->assertDatabaseMissing('accounting_transactions', ['id' => $transaction->id]);
 });
 
+it('creates an expense transaction from label items', function () {
+    $label = Label::create(['name' => 'Office Rent']);
+
+    $response = $this->actingAs($this->user)
+        ->post(route('admin.transactions.store', 'expense'), [
+            'occurred_at' => '2026-08-18 09:15:00',
+            'items' => [[
+                'label_id' => $label->id,
+                'price' => 350,
+            ]],
+            'notes' => 'Monthly rent',
+        ]);
+
+    $transaction = AccountingTransaction::where('type', 'expense')->firstOrFail();
+    $response->assertRedirect(route('admin.transactions.show', $transaction));
+
+    expect($transaction->source_type)->toBe('personal')
+        ->and((float) $transaction->subtotal)->toBe(350.0)
+        ->and((float) $transaction->total)->toBe(350.0)
+        ->and($transaction->items()->value('label_id'))->toBe($label->id);
+});
+
 it('emails a company invoice only when requested and supports manual resend', function () {
     Mail::fake();
 

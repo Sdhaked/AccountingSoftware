@@ -28,6 +28,72 @@
     @include('admin._partials.head.g-links')
     @include('admin._partials.head.g-css-files')
     @include('admin._partials.head.g-js-files')
+    <style>
+        .transaction-form-shell {
+            position: relative;
+        }
+
+        .transaction-submit-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 1085;
+            display: none;
+            place-items: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 50% 45%, rgba(93, 148, 190, 0.16), transparent 32%),
+                rgba(8, 12, 24, 0.38);
+            backdrop-filter: blur(2px);
+        }
+
+        .transaction-form-shell.is-submitting .transaction-submit-loader {
+            display: grid;
+        }
+
+        .transaction-loader-card {
+            min-width: min(360px, 92vw);
+            padding: 24px 28px;
+            border: 1px solid rgba(128, 170, 205, 0.32);
+            border-radius: 8px;
+            background: rgba(13, 18, 32, 0.82);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+            text-align: center;
+        }
+
+        .transaction-loader-ring {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            border: 4px solid rgba(135, 193, 238, 0.18);
+            border-top-color: #87c1ee;
+            animation: transactionLoaderSpin 0.8s linear infinite;
+        }
+
+        .transaction-loader-title {
+            margin: 0;
+            color: var(--color-hd-100);
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .transaction-loader-copy {
+            margin: 7px 0 0;
+            color: var(--color-text-300);
+            font-size: 0.88rem;
+        }
+
+        .transaction-form-shell.is-submitting .btn-md[type="submit"] {
+            pointer-events: none;
+            opacity: 0.78;
+        }
+
+        @keyframes transactionLoaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 @endsection
 
 @section('body')
@@ -39,7 +105,9 @@
             @include('admin._partials.breadcrumb')
             <h4 class="hd-lg">{{ $isEdit ? 'Edit' : 'Create' }} {{ ucfirst($type) }} Entry</h4>
 
-            <form action="{{ $isEdit ? route('admin.transactions.update', $transaction) : route('admin.transactions.store', $type) }}"
+            <form class="transaction-form-shell"
+                  id="transaction-entry-form"
+                  action="{{ $isEdit ? route('admin.transactions.update', $transaction) : route('admin.transactions.store', $type) }}"
                   method="POST" enctype="multipart/form-data">
                 @csrf
                 @if($isEdit) @method('PUT') @endif
@@ -159,8 +227,18 @@
                 </div>
 
                 <div>
-                    <button class="btn-md btn-sec" type="submit">{{ $isEdit ? 'Update' : 'Record' }} {{ ucfirst($type) }}</button>
+                    <button class="btn-md btn-sec" type="submit" data-submit-text="{{ $isEdit ? 'Update' : 'Record' }} {{ ucfirst($type) }}">
+                        {{ $isEdit ? 'Update' : 'Record' }} {{ ucfirst($type) }}
+                    </button>
                     <a class="btn-md btn-sec-outline" href="{{ route('admin.transactions.index') }}">Cancel</a>
+                </div>
+
+                <div class="transaction-submit-loader" aria-live="polite" aria-hidden="true">
+                    <div class="transaction-loader-card">
+                        <div class="transaction-loader-ring" aria-hidden="true"></div>
+                        <p class="transaction-loader-title">{{ $isEdit ? 'Updating entry...' : 'Saving entry...' }}</p>
+                        <p class="transaction-loader-copy">Please wait, your {{ $type }} details are being processed.</p>
+                    </div>
                 </div>
             </form>
 
@@ -188,6 +266,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const labelEntry = document.getElementById('label-entry');
     const companyWrap = document.getElementById('company-select-wrap');
     const sendInvoiceEmail = document.getElementById('send_invoice_email');
+    const transactionForm = document.getElementById('transaction-entry-form');
+
+    function setControlsDisabled(container, disabled) {
+        if (!container) return;
+        container.querySelectorAll('input, select, textarea, button').forEach(function (control) {
+            if (control.classList.contains('remove-entry') || control.id?.startsWith('add-')) return;
+            control.disabled = disabled;
+        });
+    }
 
     function refreshCompanyRow(row) {
         if (!row || !companySelect) return;
@@ -227,6 +314,9 @@ document.addEventListener('DOMContentLoaded', function () {
         labelEntry.classList.toggle('d-none', companyMode);
         companyWrap.classList.toggle('d-none', !companyMode);
         companySelect.required = companyMode;
+        companySelect.disabled = !companyMode;
+        setControlsDisabled(companyEntry, !companyMode);
+        setControlsDisabled(labelEntry, companyMode);
         if (!companyMode && sendInvoiceEmail) sendInvoiceEmail.checked = false;
         Array.from(customerSelect.options).forEach(option => option.disabled = false);
         if (companyMode) refreshAllCompanyRows();
@@ -270,6 +360,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 companySelect.value = selected.dataset.company;
                 refreshAllCompanyRows();
             }
+        }
+    });
+
+    transactionForm?.addEventListener('submit', function (event) {
+        if (this.dataset.submitting === 'true') {
+            event.preventDefault();
+            return;
+        }
+
+        this.dataset.submitting = 'true';
+        this.classList.add('is-submitting');
+        const loader = this.querySelector('.transaction-submit-loader');
+        loader?.setAttribute('aria-hidden', 'false');
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
         }
     });
 
