@@ -38,19 +38,22 @@
                 </form>
             </div>
 
-            @if($canDelete)<div class="create-event-form-box my-4">
-                <h6 class="hd-sm">Delete All Expired Certificates</h6>
-                <form method="POST" action="{{ route('admin.certificates.destroy-expired') }}"
-                      onsubmit="return confirm('This permanently deletes every expired certificate. Continue?')">
+            @if($canDelete)
+                <div class="create-event-form-box my-4">
+                    <h6 class="hd-sm">Delete All Expired Certificates</h6>
+                    <form method="POST" action="{{ route('admin.certificates.destroy-expired') }}"
+                    onsubmit="return confirm('This permanently deletes every expired certificate. Continue?')">
                     @csrf @method('DELETE')
+                    <label>Type: yes delete all exp certificates</label>
                     <div class="d-flex gap-2 flex-wrap">
-                        <input class="form-control" style="max-width:420px" name="confirmation"
-                               placeholder="Type: yes delete all exp certificates" required>
-                        <button class="btn-sm btn-sec" type="submit">Delete Expired</button>
-                    </div>
-                    @error('confirmation')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                </form>
-            </div>@endif
+                            <input class="form-control" style="max-width:420px" name="confirmation"
+                                placeholder="Type: yes delete all exp certificates" required>
+                            <button class="btn-sm btn-sec" type="submit">Delete Expired</button>
+                        </div>
+                        @error('confirmation')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </form>
+                </div>
+            @endif
 
             <div class="table-responsive">
                 <table class="table mob-view">
