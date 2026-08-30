@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Certificate extends Model
 {
@@ -13,6 +14,7 @@ class Certificate extends Model
         'company_id',
         'course_name',
         'instructor_name',
+        'instructor_signature_path',
         'issued_at',
         'expires_at',
     ];
@@ -33,5 +35,17 @@ class Certificate extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function instructorSignatureDataUri(): ?string
+    {
+        if (! $this->instructor_signature_path || ! Storage::disk('public')->exists($this->instructor_signature_path)) {
+            return null;
+        }
+
+        $mime = Storage::disk('public')->mimeType($this->instructor_signature_path) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'
+            .base64_encode(Storage::disk('public')->get($this->instructor_signature_path));
     }
 }

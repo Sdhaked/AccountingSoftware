@@ -11,6 +11,7 @@ use App\Models\Service;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class CertificateController extends Controller
@@ -44,7 +45,8 @@ class CertificateController extends Controller
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'company_id' => ['required', 'integer', 'exists:companies,id'],
             'course_name' => ['nullable', 'string', 'max:255'],
-            'instructor_name' => ['nullable', 'string', 'max:255'],
+            'instructor_name' => ['required', 'string', 'max:255'],
+            'instructor_signature' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'issued_at' => ['required', 'date'],
             'expires_at' => ['required', 'date', 'after_or_equal:issued_at'],
         ]);
@@ -59,13 +61,23 @@ class CertificateController extends Controller
             throw ValidationException::withMessages(['company_id' => 'Selected customer does not belong to this company.']);
         }
 
-        DB::transaction(function () use ($validated) {
-            $dailyNumber = Certificate::whereDate('issued_at', $validated['issued_at'])
-                ->lockForUpdate()->count() + 1;
-            $certificateNumber = date('dmY', strtotime($validated['issued_at'])).$dailyNumber;
+        $signaturePath = $request->file('instructor_signature')->store('certificate-signatures', 'public');
+        unset($validated['instructor_signature']);
+        $validated['instructor_signature_path'] = $signaturePath;
 
-            Certificate::create($validated + ['certificate_number' => $certificateNumber]);
-        });
+        try {
+            DB::transaction(function () use ($validated) {
+                $dailyNumber = Certificate::whereDate('issued_at', $validated['issued_at'])
+                    ->lockForUpdate()->count() + 1;
+                $certificateNumber = date('dmY', strtotime($validated['issued_at'])).$dailyNumber;
+
+                Certificate::create($validated + ['certificate_number' => $certificateNumber]);
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($signaturePath);
+
+            throw $exception;
+        }
 
         return redirect()->route('admin.certificates.index')->with('success', 'Certificate created successfully.');
     }
@@ -82,15 +94,20 @@ class CertificateController extends Controller
         $certificate->load(['customer', 'company']);
         $brandLogo = $certificate->company?->logoDataUri()
             ?? AppSetting::query()->first()?->sponsorImageDataUri();
+        $instructorSignature = $certificate->instructorSignatureDataUri();
 
-        return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'brandLogo'))
+        return Pdf::loadView('admin.certificates.pdf', compact('certificate', 'brandLogo', 'instructorSignature'))
             ->setPaper('a4', 'portrait')
             ->download("certificate-{$certificate->certificate_number}.pdf");
     }
 
     public function destroy(Certificate $certificate)
     {
+        $signaturePath = $certificate->instructor_signature_path;
         $certificate->delete();
+        if ($signaturePath) {
+            Storage::disk('public')->delete($signaturePath);
+        }
 
         return back()->with('success', 'Certificate deleted successfully.');
     }
@@ -98,7 +115,14 @@ class CertificateController extends Controller
     public function destroyExpired(Request $request)
     {
         $request->validate(['confirmation' => ['required', 'in:yes delete all exp certificates']]);
-        $deleted = Certificate::whereDate('expires_at', '<', today())->delete();
+        $expiredCertificates = Certificate::whereDate('expires_at', '<', today())->get(['id', 'instructor_signature_path']);
+        $deleted = $expiredCertificates->count();
+
+        Certificate::whereKey($expiredCertificates->pluck('id'))->delete();
+        $expiredCertificates
+            ->pluck('instructor_signature_path')
+            ->filter()
+            ->each(fn (string $path) => Storage::disk('public')->delete($path));
 
         return back()->with('success', "{$deleted} expired certificate(s) permanently deleted.");
     }

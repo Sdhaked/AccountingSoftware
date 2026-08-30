@@ -15,7 +15,7 @@
         <main class="dash-content">
             @include('admin._partials.breadcrumb')
             <h4 class="hd-lg">Create Certificate</h4>
-            <form action="{{ route('admin.certificates.store') }}" method="POST">
+            <form action="{{ route('admin.certificates.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="grid-2 grid-sm-1 gap-card">
                     <div class="form-floating">
@@ -56,6 +56,20 @@
                                value="{{ old('instructor_name', config('santrains.instructor_name')) }}" maxlength="255" required>
                         <label for="instructor_name">Instructor Name*</label>
                         @error('instructor_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="label-spc upload-box">
+                        <div class="previewBox mt-2">
+                            <img src="{{ asset('images/uploadimg.svg') }}"
+                                 class="preview thumb-img x3" alt="Instructor signature preview">
+                        </div>
+                        <div class="mt-4">
+                            <label for="instructor_signature">Instructor Signature*</label>
+                            <input class="form-control mt-1 @error('instructor_signature') is-invalid @enderror"
+                                   type="file" id="instructor_signature" name="instructor_signature"
+                                   accept="image/jpeg,image/png,image/webp" required>
+                            <small class="search-base">Upload JPG, PNG or WebP signature image, maximum 4 MB.</small>
+                            @error('instructor_signature')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
                     </div>
                     <div class="form-floating">
                         <input class="form-control @error('issued_at') is-invalid @enderror" type="date" id="issued_at" name="issued_at" value="{{ old('issued_at', today()->format('Y-m-d')) }}" required>

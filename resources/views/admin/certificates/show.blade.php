@@ -22,6 +22,17 @@
             <tr><th>Company</th><td>{{ $certificate->company->name }}</td></tr>
             <tr><th>Course</th><td>{{ $certificate->course_name }}</td></tr>
             <tr><th>Instructor</th><td>{{ $certificate->instructor_name }}</td></tr>
+            <tr>
+                <th>Instructor Signature</th>
+                <td>
+                    @if($certificate->instructor_signature_path)
+                        <img src="{{ asset('storage/'.$certificate->instructor_signature_path) }}"
+                             class="thumb-img x3" alt="Instructor signature">
+                    @else
+                        N/A
+                    @endif
+                </td>
+            </tr>
         </tbody></table></div>
         <a class="btn-md btn-sec" href="{{ route('admin.certificates.download', $certificate) }}"><i class="fa-solid fa-download i-mr"></i> Download PDF</a>
         <a class="btn-md btn-sec-outline" href="{{ route('admin.certificates.index') }}">Back</a>

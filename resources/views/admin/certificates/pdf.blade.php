@@ -5,6 +5,8 @@
         return 'data:image/png;base64,'.base64_encode((string) file_get_contents($path));
     };
     $logo = ($brandLogo ?? null) ?: ($sponsorImage ?? null) ?: $asset('logo.png');
+    $signature = ($instructorSignature ?? null)
+        ?: (strcasecmp($certificate->instructor_name, config('santrains.instructor_name')) === 0 ? $asset('signature.png') : null);
     $fontData = 'data:font/truetype;base64,'.base64_encode((string) file_get_contents(
         public_path('fonts/santrains/GreatVibes-Regular.ttf')
     ));
@@ -76,8 +78,8 @@
     </div>
     <div class="content instructor-label">INSTRUCTOR</div>
     <div class="content instructor-name">{{ $certificate->instructor_name }}</div>
-    @if(strcasecmp($certificate->instructor_name, config('santrains.instructor_name')) === 0)
-        <img class="art signature" src="{{ $asset('signature.png') }}" alt="Instructor signature">
+    @if($signature)
+        <img class="art signature" src="{{ $signature }}" alt="Instructor signature">
     @endif
 
     <div class="content catalog">{{ $catalog }}</div>

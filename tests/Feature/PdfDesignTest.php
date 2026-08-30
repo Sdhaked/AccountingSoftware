@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -93,6 +94,7 @@ it('stores certificate design fields and downloads the portrait PDF', function (
         'company_id' => $this->company->id,
         'course_name' => 'Manual Handling and People Handling',
         'instructor_name' => 'Santhosh Jacob',
+        'instructor_signature' => UploadedFile::fake()->image('signature.png', 260, 90),
         'issued_at' => '2026-08-10',
         'expires_at' => '2028-08-09',
     ])->assertRedirect(route('admin.certificates.index'));
@@ -100,7 +102,9 @@ it('stores certificate design fields and downloads the portrait PDF', function (
     $certificate = Certificate::firstOrFail();
     expect($certificate->certificate_number)->toBe('100820261')
         ->and($certificate->course_name)->toBe('Manual Handling and People Handling')
-        ->and($certificate->instructor_name)->toBe('Santhosh Jacob');
+        ->and($certificate->instructor_name)->toBe('Santhosh Jacob')
+        ->and($certificate->instructor_signature_path)->toStartWith('certificate-signatures/');
+    Storage::disk('public')->assertExists($certificate->instructor_signature_path);
 
     $response = $this->actingAs($this->user)->get(route('admin.certificates.download', $certificate));
 
@@ -110,7 +114,15 @@ it('stores certificate design fields and downloads the portrait PDF', function (
     $html = view('admin.certificates.pdf', [
         'certificate' => $certificate->load(['customer', 'company']),
         'brandLogo' => $certificate->company->logoDataUri(),
+        'instructorSignature' => $certificate->instructorSignatureDataUri(),
     ])->render();
 
-    expect($html)->toContain(base64_encode($logoContents));
+    $this->actingAs($this->user)
+        ->get(route('admin.certificates.show', $certificate))
+        ->assertOk()
+        ->assertSee('storage/'.$certificate->instructor_signature_path, false);
+
+    expect($html)
+        ->toContain(base64_encode($logoContents))
+        ->toContain(base64_encode(Storage::disk('public')->get($certificate->instructor_signature_path)));
 });
