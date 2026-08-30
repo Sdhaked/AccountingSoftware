@@ -83,3 +83,17 @@ it('renders the services master data list', function () {
         ->assertSee('Service List')
         ->assertSee('Manual Handling');
 });
+
+it('renders a master data detail page', function () {
+    $company = Company::create([
+        'name' => 'San Trains',
+        'address' => 'Dublin',
+        'email' => 'accounts@santrains.test',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.master-data.show', ['companies', $company->id]))
+        ->assertOk()
+        ->assertSee('Company Details')
+        ->assertSee('San Trains');
+});

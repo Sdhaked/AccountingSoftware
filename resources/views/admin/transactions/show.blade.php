@@ -8,7 +8,9 @@
 @endsection
 
 @section('body')
-    @php($currencySymbol = config('santrains.currency_symbol', '€'))
+    @php
+        $currencySymbol = config('santrains.currency_symbol', '€');
+    @endphp
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
