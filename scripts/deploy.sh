@@ -77,7 +77,9 @@ The remote PHP binary is missing required extension(s): ${missing[*]}
 Enable these extensions for this PHP binary, then re-run deployment:
   $PHP_BIN
 
-The Excel export requires the zip extension.
+Required by the application:
+  - fileinfo: image upload validation and uploaded logo/signature MIME detection
+  - zip: Excel export file generation
 
 EOF
     exit 1
