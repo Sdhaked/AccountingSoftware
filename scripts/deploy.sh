@@ -7,6 +7,17 @@ PHP_BIN="${PHP_BIN:-php}"
 RELEASE_ARCHIVE="${RELEASE_ARCHIVE:-/tmp/accounting-software-release.tar.gz}"
 MAINTENANCE_FLAG=0
 
+set_env_value() {
+  local key="$1"
+  local value="$2"
+
+  if grep -q "^${key}=" .env; then
+    sed -i "s|^${key}=.*|${key}=${value}|" .env
+  else
+    printf '\n%s=%s\n' "$key" "$value" >> .env
+  fi
+}
+
 detect_php_bin() {
   local candidates=()
 
@@ -111,6 +122,19 @@ mkdir -p \
 if [[ ! -f .env ]]; then
   echo "Missing $DEPLOY_PATH/.env. Create the production environment file before deploying."
   exit 1
+fi
+
+if [[ -n "${DEPLOY_APP_DEBUG:-}" ]]; then
+  case "$DEPLOY_APP_DEBUG" in
+    true|false)
+      set_env_value "APP_DEBUG" "$DEPLOY_APP_DEBUG"
+      echo "Updated APP_DEBUG=$DEPLOY_APP_DEBUG"
+      ;;
+    *)
+      echo "DEPLOY_APP_DEBUG must be true or false when provided."
+      exit 1
+      ;;
+  esac
 fi
 
 require_writable_deploy_tree

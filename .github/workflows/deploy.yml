@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      app_debug:
+        description: "Temporarily set server APP_DEBUG during deployment"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   test:
@@ -181,6 +190,8 @@ jobs:
           scp -P "${{ secrets.SSH_PORT }}" scripts/deploy.sh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/accounting-software-deploy.sh"
 
       - name: Run remote deployment
+        env:
+          DEPLOY_APP_DEBUG: ${{ github.event_name == 'workflow_dispatch' && inputs.app_debug || '' }}
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "chmod +x /tmp/accounting-software-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' PHP_BIN='${{ secrets.PHP_BIN }}' /tmp/accounting-software-deploy.sh"
+            "chmod +x /tmp/accounting-software-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' PHP_BIN='${{ secrets.PHP_BIN }}' DEPLOY_APP_DEBUG='$DEPLOY_APP_DEBUG' /tmp/accounting-software-deploy.sh"
