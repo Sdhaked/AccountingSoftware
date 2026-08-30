@@ -346,6 +346,13 @@ html.dark .side-nav .menu-items::-webkit-scrollbar-thumb {
   white-space: nowrap;
 }
 
+.header .leftSid .app-brand .logo {
+  height: 40px;
+  margin-left: 0;
+  max-width: 170px;
+  object-fit: contain;
+}
+
 .header .leftSid .app-brand i {
   color: var(--color-primary);
 }
@@ -543,6 +550,11 @@ html.dark .header .rightSid .mode-toggle .fa-moon {
 
   .header .leftSid .logo {
     height: 30px;
+  }
+
+  .header .leftSid .app-brand .logo {
+    height: 30px;
+    max-width: 132px;
   }
 
   .header .leftSid .app-brand {

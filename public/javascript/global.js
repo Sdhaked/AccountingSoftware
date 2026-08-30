@@ -35,18 +35,25 @@ sidebarToggle?.addEventListener("click", () => {
 // ==========> DARK / LITE MODE TOGGLER  🥗
 // ================================================
 const themeToggleBtn = document.querySelector("header .mode .mode-toggle");
-let Logo = document.querySelector("header .logo");
+const themeLogos = document.querySelectorAll("[data-logo-dark][data-logo-light]");
+
+const updateThemeLogos = (theme) => {
+  themeLogos.forEach((logo) => {
+    const logoSrc = theme === "dark" ? logo.dataset.logoDark : logo.dataset.logoLight;
+    if (logoSrc) logo.setAttribute("src", logoSrc);
+  });
+};
 
 const setTheme = (theme) => {
   if (theme === "dark") {
     document.documentElement.classList.add("dark");
     localStorage.setItem("theme", "dark");
-    if (Logo) Logo.setAttribute("src", "/images/logo-w.svg");
   } else {
     document.documentElement.classList.remove("dark");
     localStorage.setItem("theme", "light");
-    if (Logo) Logo.setAttribute("src", "/images/logo.svg");
   }
+
+  updateThemeLogos(theme);
 };
 
 // Avoid redeclaration of savedTheme

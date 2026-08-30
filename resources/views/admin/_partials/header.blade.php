@@ -5,8 +5,13 @@
             <i class="fa-solid fa-bars-staggered"></i>
         </div>
         <a class="app-brand" href="{{ route('admin.dashboard.index') }}">
-            <i class="fa-solid fa-calculator"></i>
-            <span>Accounting<span class="brand-suffix"> Software</span></span>
+            <img
+                src="{{ asset('images/logo-w.png') }}"
+                data-logo-dark="{{ asset('images/logo-w.png') }}"
+                data-logo-light="{{ asset('images/logo.png') }}"
+                alt="{{ config('app.name') }} logo"
+                class="logo"
+            >
         </a>
     </div>
 

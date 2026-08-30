@@ -7,7 +7,13 @@
         <div style="width:100%; max-width: 45rem;">
             <form class="style-box auth-box" id="loginOtpForm" novalidate>
                 @csrf
-                <img src="{{ asset('images/account-logo.png') }}" alt="{{ config('app.name') }} logo" class="logo-img auth-logo-account"/>
+                <img
+                    src="{{ asset('images/logo-w.png') }}"
+                    data-logo-dark="{{ asset('images/logo-w.png') }}"
+                    data-logo-light="{{ asset('images/logo.png') }}"
+                    alt="{{ config('app.name') }} logo"
+                    class="logo-img auth-logo-account"
+                />
 
                 @if (session('success'))
                     <div class="auth-message auth-message-success" role="alert">
