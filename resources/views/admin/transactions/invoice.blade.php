@@ -31,8 +31,8 @@
         .customer-label { font-size: 12pt; font-weight: bold; line-height: 1.2; }
         .customer-name { margin-top: -4pt; font-size: 15pt; line-height: 1.2; }
         .customer-address { margin-top: 0; font-size: 14pt; line-height: 1.25; }
-        .customer-email { display: inline-block; margin-top: -4pt; color: #0756cf; border-bottom: 1.2pt solid #0756cf; font-size: 18.5pt; line-height: 1.05; }
-        .customer-email-small { font-size: 13pt; }
+        .customer-email { display: inline-block; margin-top: -4pt; color: #0756cf; border-bottom: 1.2pt solid #0756cf; font-size: 14.5pt; line-height: 1.05; }
+        .customer-email-small { font-size: 12pt; }
         .invoice-meta { position: absolute; z-index: 2; left: 358pt; top: 160.2pt; width: 180pt; border-collapse: collapse; font-size: 12.5pt; }
         .invoice-meta td { padding: 2pt 0 2.3pt; white-space: nowrap; }
         .invoice-meta .label { width: 100pt; }
@@ -90,7 +90,7 @@
 
     <table class="items">
         <colgroup><col class="course" width="32%"><col class="fee" width="20%"><col class="numeric" width="24%"><col class="numeric" width="24%"></colgroup>
-        <thead><tr><th>Course</th><th>Fee</th><th>Session</th><th>Sub Total</th></tr></thead>
+        <thead><tr><th>Particulars</th><th>Rate</th><th>QTY</th><th>Sub Total</th></tr></thead>
         <tbody>
         @foreach($transaction->items as $item)
             <tr>
