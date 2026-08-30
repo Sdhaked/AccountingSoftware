@@ -113,6 +113,11 @@ EOF
   fi
 }
 
+ensure_laravel_runtime_permissions() {
+  find storage bootstrap/cache -type d -exec chmod 777 {} +
+  find storage bootstrap/cache -type f -exec chmod 666 {} +
+}
+
 if [[ -z "$DEPLOY_PATH" ]]; then
   echo "DEPLOY_PATH is required."
   exit 1
@@ -154,6 +159,8 @@ mkdir -p \
   storage/framework/views \
   storage/logs
 
+ensure_laravel_runtime_permissions
+
 if [[ ! -f .env ]]; then
   echo "Missing $DEPLOY_PATH/.env. Create the production environment file before deploying."
   exit 1
@@ -193,9 +200,7 @@ find . -mindepth 1 -maxdepth 1 \
 
 tar -xzf "$RELEASE_ARCHIVE" -C "$DEPLOY_PATH"
 
-find storage -type d -exec chmod 775 {} +
-chmod 777 storage/fonts
-find bootstrap/cache -type d -exec chmod 775 {} +
+ensure_laravel_runtime_permissions
 
 "$PHP_BIN" artisan migrate --force
 "$PHP_BIN" artisan storage:link || true
