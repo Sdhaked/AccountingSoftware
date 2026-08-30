@@ -16,6 +16,7 @@ use App\Services\TransactionReportExporter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -377,7 +378,35 @@ class TransactionController extends Controller
 
     public function export(Request $request, TransactionReportExporter $exporter)
     {
-        $path = $exporter->export($this->validatedFilters($request));
+        $filters = $this->validatedFilters($request);
+
+        Log::info('Transaction Excel export requested', [
+            'user_id' => $request->user()?->id,
+            'filters' => array_filter($filters, fn ($value) => filled($value)),
+            'php_version' => PHP_VERSION,
+            'currency_symbol' => config('santrains.currency_symbol'),
+        ]);
+
+        try {
+            $path = $exporter->export($filters);
+        } catch (\Throwable $exception) {
+            Log::error('Transaction Excel export failed', [
+                'user_id' => $request->user()?->id,
+                'filters' => array_filter($filters, fn ($value) => filled($value)),
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            throw $exception;
+        }
+
+        Log::info('Transaction Excel export generated', [
+            'user_id' => $request->user()?->id,
+            'file' => basename($path),
+            'bytes' => is_file($path) ? filesize($path) : null,
+        ]);
 
         return response()->download($path, 'income-expenditure-'.now()->format('Y-m-d-His').'.xlsx')
             ->deleteFileAfterSend(true);
