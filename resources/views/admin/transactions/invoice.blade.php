@@ -29,7 +29,7 @@
         .art { position: absolute; z-index: 0; }
         .wave-top { left: 0; top: -0.3pt; width: 595.02pt; height: 175.75pt; }
         .wave-bottom { left: -2.22pt; top: 696.05pt; width: 599.88pt; height: 144.85pt; }
-        .brand-logo { position: absolute; z-index: 1; left: 21.42pt; top: 39.84pt; width: 228.18pt; height: 149.28pt; }
+        .brand-logo { position: absolute; z-index: 1; left: 100px; top: 100px; width: 150px; height: auto; }
         .invoice-title { position: absolute; z-index: 2; left: 381pt; top: 120pt; width: 160pt; text-align: center; font-family: DejaVu Sans, sans-serif; font-size: 36pt; font-weight: normal; line-height: 1; }
         .customer { position: absolute; z-index: 2; left: 62.5pt; top: 168.8pt; width: 282pt; }
         .customer-label { font-size: 12pt; font-weight: bold; line-height: 1.2; }
