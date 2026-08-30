@@ -2,6 +2,7 @@
     $row = $row ?? [];
     $selectedLabel = $row['label_id'] ?? '';
     $isOther = (string) $selectedLabel === 'other';
+    $currencySymbol = config('santrains.currency_symbol', '€');
 @endphp
 <div class="create-event-form-box label-item-row" data-label-row>
     <div class="grid-2 grid-sm-1 gap-card">
@@ -30,7 +31,7 @@
         <div class="form-floating">
             <input class="form-control" type="number" min="0" step="0.01"
                    name="items[{{ $index }}][price]" value="{{ $row['price'] ?? '' }}" required>
-            <label>Price (€)*</label>
+            <label>Price ({{ $currencySymbol }})*</label>
         </div>
         <div class="d-flex align-items-center justify-content-end">
             <button class="btn-sm btn-sec-outline remove-entry" type="button" title="Remove item">

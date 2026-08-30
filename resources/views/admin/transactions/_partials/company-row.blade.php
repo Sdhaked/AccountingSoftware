@@ -2,6 +2,7 @@
     $row = $row ?? [];
     $selectedKind = $row['kind'] ?? 'product';
     $selectedSource = $row['source_id'] ?? '';
+    $currencySymbol = config('santrains.currency_symbol', '€');
 @endphp
 <div class="create-event-form-box company-item-row" data-company-row>
     <div class="grid-2 grid-sm-1 gap-card">
@@ -19,14 +20,14 @@
                     <option value="{{ $product->id }}" data-kind="product" data-company="{{ $product->company_id }}"
                             data-price="{{ $product->price }}" data-tax="{{ $product->taxClass->percentage }}"
                             @selected((string) $selectedSource === (string) $product->id && $selectedKind === 'product')>
-                        {{ $product->name }} - €{{ number_format((float) $product->price, 2) }}
+                        {{ $product->name }} - {{ $currencySymbol }}{{ number_format((float) $product->price, 2) }}
                     </option>
                 @endforeach
                 @foreach($services as $service)
                     <option value="{{ $service->id }}" data-kind="service" data-company="{{ $service->company_id }}"
                             data-price="{{ $service->default_rate }}" data-tax="0"
                             @selected((string) $selectedSource === (string) $service->id && $selectedKind === 'service')>
-                        {{ $service->name }} - €{{ number_format((float) $service->default_rate, 2) }}
+                        {{ $service->name }} - {{ $currencySymbol }}{{ number_format((float) $service->default_rate, 2) }}
                     </option>
                 @endforeach
             </select>

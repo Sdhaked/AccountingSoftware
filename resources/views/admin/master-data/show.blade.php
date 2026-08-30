@@ -8,6 +8,7 @@
 @endsection
 
 @section('body')
+    @php($currencySymbol = config('santrains.currency_symbol', '€'))
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
@@ -28,7 +29,7 @@
                             <th style="width:240px">{{ $field['label'] }}</th>
                             <td>
                                 @if(($field['format'] ?? null) === 'money')
-                                    €{{ number_format((float) $value, 2) }}
+                                    {{ $currencySymbol }}{{ number_format((float) $value, 2) }}
                                 @elseif(($field['format'] ?? null) === 'percentage')
                                     {{ rtrim(rtrim(number_format((float) $value, 3), '0'), '.') }}%
                                 @else

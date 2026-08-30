@@ -21,6 +21,7 @@
         : [];
     $companyRows = old('company_items', $storedCompanyRows ?: [['kind' => 'product', 'source_id' => '', 'quantity' => 1]]);
     $labelRows = old('items', $storedLabelRows ?: [['label_id' => '', 'other_label' => '', 'quantity' => 1, 'price' => '']]);
+    $currencySymbol = config('santrains.currency_symbol', '€');
 @endphp
 
 @section('head')
@@ -259,6 +260,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     let companyIndex = {{ count($companyRows) }};
     let labelIndex = {{ count($labelRows) }};
+    const currencySymbol = @json($currencySymbol);
     const sourceSelect = document.getElementById('transaction_source');
     const companySelect = document.getElementById('transaction_company');
     const customerSelect = document.getElementById('transaction_customer');
@@ -291,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selected && selected.value && selected.disabled) item.value = '';
         const current = item.options[item.selectedIndex];
         row.querySelector('.item-rate').textContent = current && current.value
-            ? `Rate: €${Number(current.dataset.price).toFixed(2)} | Tax: ${Number(current.dataset.tax).toFixed(3)}%`
+            ? `Rate: ${currencySymbol}${Number(current.dataset.price).toFixed(2)} | Tax: ${Number(current.dataset.tax).toFixed(3)}%`
             : 'Select an item to view its rate.';
     }
 

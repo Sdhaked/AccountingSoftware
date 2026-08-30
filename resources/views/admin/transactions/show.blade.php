@@ -8,6 +8,7 @@
 @endsection
 
 @section('body')
+    @php($currencySymbol = config('santrains.currency_symbol', '€'))
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
@@ -55,14 +56,14 @@
             <tbody>
             @foreach($transaction->items as $item)<tr>
                 <td>{{ $item->label }}</td><td>{{ rtrim(rtrim(number_format((float) $item->quantity, 3), '0'), '.') }}</td>
-                <td>€{{ number_format((float) $item->unit_price, 2) }}</td><td>{{ rtrim(rtrim(number_format((float) $item->tax_rate, 3), '0'), '.') }}%</td>
-                <td>€{{ number_format((float) $item->total, 2) }}</td>
+                <td>{{ $currencySymbol }}{{ number_format((float) $item->unit_price, 2) }}</td><td>{{ rtrim(rtrim(number_format((float) $item->tax_rate, 3), '0'), '.') }}%</td>
+                <td>{{ $currencySymbol }}{{ number_format((float) $item->total, 2) }}</td>
             </tr>@endforeach
             </tbody>
             <tfoot>
-                <tr><th colspan="4">Subtotal</th><th>€{{ number_format((float) $transaction->subtotal, 2) }}</th></tr>
-                <tr><th colspan="4">Tax</th><th>€{{ number_format((float) $transaction->tax_total, 2) }}</th></tr>
-                <tr><th colspan="4">Total</th><th>€{{ number_format((float) $transaction->total, 2) }}</th></tr>
+                <tr><th colspan="4">Subtotal</th><th>{{ $currencySymbol }}{{ number_format((float) $transaction->subtotal, 2) }}</th></tr>
+                <tr><th colspan="4">Tax</th><th>{{ $currencySymbol }}{{ number_format((float) $transaction->tax_total, 2) }}</th></tr>
+                <tr><th colspan="4">Total</th><th>{{ $currencySymbol }}{{ number_format((float) $transaction->total, 2) }}</th></tr>
             </tfoot>
         </table></div>
 

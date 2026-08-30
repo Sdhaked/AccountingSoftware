@@ -31,6 +31,8 @@ beforeEach(function () {
 });
 
 it('downloads the branded San Trains invoice as a PDF', function () {
+    config(['santrains.currency_symbol' => '€']);
+
     $transaction = AccountingTransaction::create([
         'reference_number' => '010820261',
         'type' => 'income',
@@ -44,21 +46,28 @@ it('downloads the branded San Trains invoice as a PDF', function () {
         'issuer_name' => $this->company->name,
         'issuer_email' => $this->company->email,
         'issuer_address' => $this->company->address,
-        'subtotal' => 100,
+        'subtotal' => 150,
         'tax_total' => 0,
-        'total' => 100,
+        'total' => 150,
         'created_by' => $this->user->id,
     ]);
     $transaction->items()->create([
         'item_type' => 'service',
         'label' => 'Manual Handling & People Handling',
         'quantity' => 1,
-        'unit_price' => 100,
+        'unit_price' => 150,
         'tax_rate' => 0,
-        'subtotal' => 100,
+        'subtotal' => 150,
         'tax_amount' => 0,
-        'total' => 100,
+        'total' => 150,
     ]);
+
+    $html = view('admin.transactions.invoice', [
+        'transaction' => $transaction->load('items'),
+        'sponsorImage' => null,
+    ])->render();
+
+    expect($html)->toContain('€150.00/-');
 
     $response = $this->actingAs($this->user)->get(route('admin.transactions.invoice', $transaction));
 

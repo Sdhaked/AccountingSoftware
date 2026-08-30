@@ -24,6 +24,8 @@ class TransactionReportExporter
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $currencySymbol = config('santrains.currency_symbol', '€');
+        $currencyFormat = sprintf('"%s"#,##0.00;[Red]("%s"#,##0.00);-', str_replace('"', '""', $currencySymbol), str_replace('"', '""', $currencySymbol));
         $sheet->setTitle('Income & Expenditure');
         $headers = collect(['MONTH'])->concat($incomeLabels)->concat(['Total Income', 'Total Expenses'])
             ->concat($expenseLabels)->values();
@@ -42,7 +44,7 @@ class TransactionReportExporter
         foreach ($headers as $index => $header) {
             $column = $index + 1;
             $sheet->setCellValue([$column, 4], $header);
-            $sheet->setCellValue([$column, 5], $column === 1 ? '' : '€');
+            $sheet->setCellValue([$column, 5], $column === 1 ? '' : $currencySymbol);
         }
 
         $row = 6;
@@ -100,7 +102,7 @@ class TransactionReportExporter
         $sheet->getStyle("A{$totalRow}:{$lastLetter}{$totalRow}")->getFont()->setBold(true);
         $sheet->getStyle("A6:A" . ($totalRow - 1))->getNumberFormat()->setFormatCode('mmm-yy');
         $sheet->getStyle("B6:{$lastLetter}{$totalRow}")->getNumberFormat()
-            ->setFormatCode('€#,##0.00;[Red](€#,##0.00);-');
+            ->setFormatCode($currencyFormat);
         $sheet->getStyle("A4:{$lastLetter}{$totalRow}")->getAlignment()
             ->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
         $sheet->freezePane('A6');

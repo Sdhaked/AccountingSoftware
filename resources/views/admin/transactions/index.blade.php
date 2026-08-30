@@ -8,6 +8,7 @@
 @endsection
 
 @section('body')
+    @php($currencySymbol = config('santrains.currency_symbol', '€'))
     @include('admin._partials.preloader')
     @include('admin._partials.sidebar')
     @include('admin._partials.header')
@@ -84,7 +85,7 @@
                 @foreach(['income' => 'Income', 'expense' => 'Expense', 'profit' => 'Profit', 'loss' => 'Loss'] as $key => $label)
                     <div class="create-event-form-box">
                         <div class="text-200">{{ $label }}</div>
-                        <h3 class="{{ in_array($key, ['expense', 'loss']) ? 'red' : 'green' }}">€{{ number_format((float) $summary[$key], 2) }}</h3>
+                        <h3 class="{{ in_array($key, ['expense', 'loss']) ? 'red' : 'green' }}">{{ $currencySymbol }}{{ number_format((float) $summary[$key], 2) }}</h3>
                     </div>
                 @endforeach
             </div>
@@ -99,7 +100,7 @@
                         <td><div class="data-label">Type</div><span class="text-capitalize {{ $transaction->type === 'income' ? 'green' : 'red' }}">{{ $transaction->type }}</span></td>
                         <td><div class="data-label">Company / Personal</div>{{ $transaction->source_type === 'company' ? $transaction->issuer_name : 'Personal' }}</td>
                         <td><div class="data-label">Customer</div>{{ $transaction->customer_name ?: 'N/A' }}</td>
-                        <td><div class="data-label">Total</div>€{{ number_format((float) $transaction->total, 2) }}</td>
+                        <td><div class="data-label">Total</div>{{ $currencySymbol }}{{ number_format((float) $transaction->total, 2) }}</td>
                         <td><div class="data-label">Actions</div><div class="action-row">
                             <a class="action-btn" href="{{ route('admin.transactions.show', $transaction) }}" title="View"><i class="fa-regular fa-eye"></i></a>
                             @if(auth()->user()->hasAnyPermission(['transactions-edit-transactions', 'transactions-manage-transactions']))

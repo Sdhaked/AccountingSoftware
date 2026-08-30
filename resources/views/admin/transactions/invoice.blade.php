@@ -5,8 +5,12 @@
         return 'data:image/png;base64,'.base64_encode((string) file_get_contents($path));
     };
     $logo = $sponsorImage ?: $asset('logo.png');
+    $currencySymbol = config('santrains.currency_symbol', '€');
     $formatNumber = static function (float $value): string {
         return rtrim(rtrim(number_format($value, 2, '.', ','), '0'), '.');
+    };
+    $formatMoney = static function (float $value) use ($currencySymbol): string {
+        return $currencySymbol.number_format($value, 2, '.', ',').'/-';
     };
     $invoiceNumber = '#'.ltrim((string) $transaction->reference_number, '#');
     $invoiceNumberClass = strlen($invoiceNumber) > 18 ? 'invoice-number invoice-number-small' : 'invoice-number';
@@ -95,9 +99,9 @@
         @foreach($transaction->items as $item)
             <tr>
                 <td><div class="item-label">{{ $item->label }}</div></td>
-                <td>{{ $formatNumber((float) $item->unit_price) }}</td>
+                <td>{{ $formatMoney((float) $item->unit_price) }}</td>
                 <td>{{ $formatNumber((float) $item->quantity) }}</td>
-                <td>{{ $formatNumber((float) $item->total) }}</td>
+                <td>{{ $formatMoney((float) $item->total) }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -106,7 +110,7 @@
     <div class="amount-received">Amount Received</div>
     <div class="total-bar">
         <span class="total-label">Total</span><span class="total-colon">:</span>
-        <span class="total-value">{{ $formatNumber((float) $transaction->total) }}</span>
+        <span class="total-value">{{ $formatMoney((float) $transaction->total) }}</span>
     </div>
 
     <div class="contact phone"><img src="{{ $asset('contact-phone.png') }}" alt=""><span>{{ config('santrains.phone') }}</span></div>

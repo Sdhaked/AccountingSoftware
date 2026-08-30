@@ -10,6 +10,7 @@
 
 @section('body')
     @php
+        $currencySymbol = config('santrains.currency_symbol', '€');
         $canCreate = auth()->user()->hasAnyPermission(["{$entity}-create-{$entity}", "{$entity}-manage-{$entity}"]);
         $canEdit = auth()->user()->hasAnyPermission(["{$entity}-edit-{$entity}", "{$entity}-manage-{$entity}"]);
         $canDelete = auth()->user()->hasAnyPermission(["{$entity}-delete-{$entity}", "{$entity}-manage-{$entity}"]);
@@ -60,7 +61,7 @@
                                 <td>
                                     <div class="data-label">{{ $field['label'] }}</div>
                                     @if(($field['format'] ?? null) === 'money')
-                                        €{{ number_format((float) $value, 2) }}
+                                        {{ $currencySymbol }}{{ number_format((float) $value, 2) }}
                                     @elseif(($field['format'] ?? null) === 'percentage')
                                         {{ rtrim(rtrim(number_format((float) $value, 3), '0'), '.') }}%
                                     @else
