@@ -167,6 +167,35 @@ it('reports a missing saved customer email without attempting manual delivery', 
     Mail::assertNothingSent();
 });
 
+it('downloads the transaction export as an Excel workbook', function () {
+    $transaction = ($this->makeTransaction)([
+        'reference_number' => 'INC-EXPORT-0001',
+        'occurred_at' => '2026-08-19 10:00:00',
+        'subtotal' => 220,
+        'tax_total' => 22,
+        'total' => 242,
+    ]);
+    $transaction->items()->create([
+        'item_type' => 'product',
+        'source_id' => $this->product->id,
+        'label' => 'Ledger Package',
+        'quantity' => 2,
+        'unit_price' => 110,
+        'tax_rate' => 10,
+        'subtotal' => 220,
+        'tax_amount' => 22,
+        'total' => 242,
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->get(route('admin.transactions.export'))
+        ->assertOk();
+
+    expect($response->headers->get('content-disposition'))
+        ->toContain('attachment; filename=income-expenditure-')
+        ->toContain('.xlsx');
+});
+
 it('bulk deletes only entries matching every active filter and removes their files', function () {
     Storage::fake('public');
     $target = ($this->makeTransaction)();

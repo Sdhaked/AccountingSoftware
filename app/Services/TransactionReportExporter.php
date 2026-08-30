@@ -111,11 +111,11 @@ class TransactionReportExporter
         }
         $sheet->getRowDimension(4)->setRowHeight(42);
 
-        $directory = storage_path('app/private/reports');
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
+        $path = tempnam(sys_get_temp_dir(), 'income-expenditure-');
+        if ($path === false) {
+            throw new \RuntimeException('Unable to create a temporary file for the Excel export.');
         }
-        $path = $directory . DIRECTORY_SEPARATOR . 'income-expenditure-' . uniqid() . '.xlsx';
+
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 

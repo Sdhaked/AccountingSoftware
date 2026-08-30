@@ -39,6 +39,51 @@ detect_php_bin() {
   return 1
 }
 
+require_php_extensions() {
+  local missing=()
+  local extension
+  local required_extensions=(
+    bcmath
+    ctype
+    dom
+    fileinfo
+    filter
+    gd
+    iconv
+    libxml
+    mbstring
+    openssl
+    pdo
+    pdo_mysql
+    simplexml
+    tokenizer
+    xml
+    xmlreader
+    xmlwriter
+    zip
+    zlib
+  )
+
+  for extension in "${required_extensions[@]}"; do
+    if ! "$PHP_BIN" -r "exit(extension_loaded('$extension') ? 0 : 1);" >/dev/null 2>&1; then
+      missing+=("$extension")
+    fi
+  done
+
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    cat <<EOF
+The remote PHP binary is missing required extension(s): ${missing[*]}
+
+Enable these extensions for this PHP binary, then re-run deployment:
+  $PHP_BIN
+
+The Excel export requires the zip extension.
+
+EOF
+    exit 1
+  fi
+}
+
 require_writable_deploy_tree() {
   local blocked
 
@@ -96,6 +141,7 @@ EOF
 fi
 
 echo "Using PHP binary: $PHP_BIN ($("$PHP_BIN" -r 'echo PHP_VERSION;'))"
+require_php_extensions
 
 mkdir -p \
   bootstrap/cache \
