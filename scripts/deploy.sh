@@ -7,17 +7,6 @@ PHP_BIN="${PHP_BIN:-php}"
 RELEASE_ARCHIVE="${RELEASE_ARCHIVE:-/tmp/accounting-software-release.tar.gz}"
 MAINTENANCE_FLAG=0
 
-set_env_value() {
-  local key="$1"
-  local value="$2"
-
-  if grep -q "^${key}=" .env; then
-    sed -i "s|^${key}=.*|${key}=${value}|" .env
-  else
-    printf '\n%s=%s\n' "$key" "$value" >> .env
-  fi
-}
-
 detect_php_bin() {
   local candidates=()
 
@@ -124,19 +113,6 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
-if [[ -n "${DEPLOY_APP_DEBUG:-}" ]]; then
-  case "$DEPLOY_APP_DEBUG" in
-    true|false)
-      set_env_value "APP_DEBUG" "$DEPLOY_APP_DEBUG"
-      echo "Updated APP_DEBUG=$DEPLOY_APP_DEBUG"
-      ;;
-    *)
-      echo "DEPLOY_APP_DEBUG must be true or false when provided."
-      exit 1
-      ;;
-  esac
-fi
-
 require_writable_deploy_tree
 
 if [[ -f artisan ]]; then
@@ -145,9 +121,19 @@ if [[ -f artisan ]]; then
 fi
 
 cleanup() {
+  local exit_code=$?
+
   if [[ "$MAINTENANCE_FLAG" -eq 1 && -f artisan ]]; then
     "$PHP_BIN" artisan up || true
   fi
+
+  if [[ "$exit_code" -ne 0 && -f storage/logs/laravel.log ]]; then
+    echo
+    echo "Deployment failed. Last Laravel log lines:"
+    tail -n 120 storage/logs/laravel.log || true
+  fi
+
+  exit "$exit_code"
 }
 
 trap cleanup EXIT
@@ -171,5 +157,6 @@ find bootstrap/cache -type d -exec chmod 775 {} +
 "$PHP_BIN" artisan config:cache
 "$PHP_BIN" artisan route:cache
 "$PHP_BIN" artisan view:cache
+"$PHP_BIN" artisan app:smoke-master-data services
 
 rm -f "$RELEASE_ARCHIVE" /tmp/accounting-software-deploy.sh
