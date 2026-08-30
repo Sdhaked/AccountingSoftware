@@ -14,6 +14,14 @@ on:
         options:
           - "false"
           - "true"
+      show_laravel_log:
+        description: "Print the last Laravel log lines after deployment"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   test:
@@ -195,3 +203,9 @@ jobs:
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "chmod +x /tmp/accounting-software-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' PHP_BIN='${{ secrets.PHP_BIN }}' DEPLOY_APP_DEBUG='$DEPLOY_APP_DEBUG' /tmp/accounting-software-deploy.sh"
+
+      - name: Show Laravel log tail
+        if: github.event_name == 'workflow_dispatch' && inputs.show_laravel_log == 'true'
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && if [ -f storage/logs/laravel.log ]; then tail -n 120 storage/logs/laravel.log; else echo 'No Laravel log file found.'; fi"

@@ -2,6 +2,7 @@
 
 use App\Models\Company;
 use App\Models\Role;
+use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,4 +62,24 @@ it('rejects letters in customer phone numbers', function () {
             'company_id' => $company->id,
         ])
         ->assertSessionHasErrors('phone');
+});
+
+it('renders the services master data list', function () {
+    $company = Company::create([
+        'name' => 'San Trains',
+        'address' => 'Dublin',
+        'email' => 'accounts@santrains.test',
+    ]);
+
+    Service::create([
+        'company_id' => $company->id,
+        'name' => 'Manual Handling',
+        'default_rate' => 100,
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.master-data.index', 'services'))
+        ->assertOk()
+        ->assertSee('Service List')
+        ->assertSee('Manual Handling');
 });
