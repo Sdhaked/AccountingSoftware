@@ -29,7 +29,7 @@
         .frame { z-index: 0; left: 37.4pt; top: 44.4pt; width: 520.54pt; height: 753.12pt; }
         .ribbon-top { z-index: 5; left: 220.74pt; top: -2.04pt; width: 373.98pt; height: 226.86pt; }
         .ribbon-bottom { z-index: 5; left: 0; top: 619.26pt; width: 361.74pt; height: 222.72pt; }
-        .brand-logo { z-index: 1; left: 138.9pt; top: 67.8pt; width: 295.86pt; height: 170.34pt; }
+        .brand-logo { z-index: 1; left: 145.9pt; top: 67.8pt; width: 250.86pt; height: auto; }
         .content { position: absolute; z-index: 2; text-align: center; }
         .certificate-title { left: 72pt; top: 229pt; width: 451pt; color: #ef2027; font-size: 23pt; font-weight: bold; line-height: 1.1; }
         .certify { left: 110pt; top: 282pt; width: 375pt; font-size: 14pt; font-weight: bold; }
