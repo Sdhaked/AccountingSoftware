@@ -74,8 +74,8 @@ class TransactionController extends Controller
             'customers' => Customer::with('company')->orderBy('name')->get(),
             'companies' => Company::orderBy('name')->get(),
             'products' => Product::with(['company', 'taxClass'])->orderBy('name')->get(),
-            'services' => Service::with('company')->orderBy('name')->get(),
-            'labels' => Label::orderBy('name')->get(),
+            'services' => Service::with(['company', 'taxClass'])->orderBy('name')->get(),
+            'labels' => Label::where('type', $type)->orderBy('name')->get(),
         ];
     }
 
@@ -90,19 +90,18 @@ class TransactionController extends Controller
                 $user = $request->user();
                 $customer = null;
                 $company = null;
-                $sourceType = 'personal';
+                $sourceType = $request->string('source_type')->toString();
 
-                if ($type === 'income') {
+                if ($type === 'income' && $sourceType === 'company') {
+                    $company = Company::findOrFail($request->integer('company_id'));
                     $customer = Customer::findOrFail($request->integer('customer_id'));
-                    $sourceType = $request->string('source_type')->toString();
-                    if ($sourceType === 'company') {
-                        $company = Company::findOrFail($request->integer('company_id'));
-                        if ($customer->company_id !== $company->id) {
-                            throw ValidationException::withMessages([
-                                'company_id' => 'Selected customer does not belong to this company.',
-                            ]);
-                        }
+                    if ($customer->company_id !== $company->id) {
+                        throw ValidationException::withMessages([
+                            'customer_id' => 'Selected customer does not belong to this company.',
+                        ]);
                     }
+                } elseif ($sourceType === 'company') {
+                    $company = Company::findOrFail($request->integer('company_id'));
                 }
 
                 $issuerName = $company?->name ?? $user->name;
@@ -206,19 +205,18 @@ class TransactionController extends Controller
                 $user = $request->user();
                 $customer = null;
                 $company = null;
-                $sourceType = 'personal';
+                $sourceType = $request->string('source_type')->toString();
 
-                if ($type === 'income') {
+                if ($type === 'income' && $sourceType === 'company') {
+                    $company = Company::findOrFail($request->integer('company_id'));
                     $customer = Customer::findOrFail($request->integer('customer_id'));
-                    $sourceType = $request->string('source_type')->toString();
-                    if ($sourceType === 'company') {
-                        $company = Company::findOrFail($request->integer('company_id'));
-                        if ($customer->company_id !== $company->id) {
-                            throw ValidationException::withMessages([
-                                'company_id' => 'Selected customer does not belong to this company.',
-                            ]);
-                        }
+                    if ($customer->company_id !== $company->id) {
+                        throw ValidationException::withMessages([
+                            'customer_id' => 'Selected customer does not belong to this company.',
+                        ]);
                     }
+                } elseif ($sourceType === 'company') {
+                    $company = Company::findOrFail($request->integer('company_id'));
                 }
 
                 $items = $type === 'income' && $sourceType === 'company'
@@ -418,13 +416,13 @@ class TransactionController extends Controller
         $base = [
             'occurred_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'source_type' => ['required', 'in:company,personal'],
+            'company_id' => ['nullable', 'required_if:source_type,company', 'integer', 'exists:companies,id'],
         ];
 
         if ($type === 'income') {
             $base += [
-                'customer_id' => ['required', 'integer', 'exists:customers,id'],
-                'source_type' => ['required', 'in:company,personal'],
-                'company_id' => ['nullable', 'required_if:source_type,company', 'integer', 'exists:companies,id'],
+                'customer_id' => ['nullable', 'required_if:source_type,company', 'integer', 'exists:customers,id'],
                 'send_invoice_email' => ['nullable', 'boolean'],
             ];
         } else {
@@ -441,17 +439,28 @@ class TransactionController extends Controller
                 'company_items' => ['required', 'array', 'min:1'],
                 'company_items.*.kind' => ['required', 'in:product,service'],
                 'company_items.*.source_id' => ['required', 'integer'],
-                'company_items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999'],
+                'company_items.*.quantity' => ['required', 'integer', 'min:1', 'max:999999999'],
             ];
         } else {
             $base += [
                 'items' => ['required', 'array', 'min:1'],
-                'items.*.label_id' => ['required'],
+                'items.*.label_id' => [
+                    'required',
+                    function (string $attribute, mixed $value, \Closure $fail) use ($type) {
+                        if ((string) $value === 'other') {
+                            return;
+                        }
+
+                        if (! Label::whereKey($value)->where('type', $type)->exists()) {
+                            $fail('Select a valid account for this transaction type.');
+                        }
+                    },
+                ],
                 'items.*.other_label' => ['nullable', 'string', 'max:255'],
                 'items.*.price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             ];
             if ($type === 'income') {
-                $base['items.*.quantity'] = ['required', 'numeric', 'gt:0', 'max:999999999'];
+                $base['items.*.quantity'] = ['required', 'integer', 'min:1', 'max:999999999'];
             }
         }
 
@@ -490,15 +499,15 @@ class TransactionController extends Controller
             if ($row['kind'] === 'product') {
                 $source = Product::with('taxClass')->where('company_id', $company->id)->findOrFail($row['source_id']);
                 $price = (float) $source->price;
-                $taxRate = (float) $source->taxClass->percentage;
+                $taxRate = (float) ($source->taxClass?->percentage ?? 0);
             } else {
-                $source = Service::where('company_id', $company->id)->findOrFail($row['source_id']);
+                $source = Service::with('taxClass')->where('company_id', $company->id)->findOrFail($row['source_id']);
                 $price = (float) $source->default_rate;
-                $taxRate = 0;
+                $taxRate = (float) ($source->taxClass?->percentage ?? 0);
             }
 
             return $this->calculatedItem(
-                $row['kind'], $source->name, (float) $row['quantity'], $price, $taxRate, $source->id
+                $row['kind'], $source->name, (int) $row['quantity'], $price, $taxRate, $source->id
             );
         })->all();
     }
@@ -511,7 +520,7 @@ class TransactionController extends Controller
                 if ($name === '') {
                     throw ValidationException::withMessages(['items' => 'Enter a name when Other is selected.']);
                 }
-                $label = Label::firstOrCreate(['name' => $name]);
+                $label = Label::firstOrCreate(['type' => $type, 'name' => $name]);
                 $itemType = 'other';
             } else {
                 $label = Label::findOrFail((int) $row['label_id']);
@@ -521,7 +530,7 @@ class TransactionController extends Controller
             return $this->calculatedItem(
                 $itemType,
                 $label->name,
-                $type === 'income' ? (float) $row['quantity'] : 1,
+                $type === 'income' ? (int) $row['quantity'] : 1,
                 (float) $row['price'],
                 0,
                 null,
@@ -533,7 +542,7 @@ class TransactionController extends Controller
     private function calculatedItem(
         string $type,
         string $label,
-        float $quantity,
+        int $quantity,
         float $price,
         float $taxRate,
         ?int $sourceId = null,

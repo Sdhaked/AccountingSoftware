@@ -3,15 +3,16 @@
 @php
     $isIncome = $type === 'income';
     $isEdit = isset($transaction);
-    $sourceType = old('source_type', $transaction->source_type ?? 'company');
-    $storedCompanyRows = $isEdit && $sourceType === 'company'
+    $sourceType = old('source_type', $transaction->source_type ?? ($isIncome ? 'company' : 'personal'));
+    $usesCompanyCatalog = $isIncome && $sourceType === 'company';
+    $storedCompanyRows = $isEdit && $usesCompanyCatalog
         ? $transaction->items->map(fn ($item) => [
             'kind' => $item->item_type,
             'source_id' => $item->source_id,
             'quantity' => $item->quantity,
         ])->all()
         : [];
-    $storedLabelRows = $isEdit && $sourceType === 'personal'
+    $storedLabelRows = $isEdit && ! $usesCompanyCatalog
         ? $transaction->items->map(fn ($item) => [
             'label_id' => $item->item_type === 'other' ? 'other' : $item->label_id,
             'other_label' => $item->item_type === 'other' ? $item->label : '',
@@ -22,6 +23,9 @@
     $companyRows = old('company_items', $storedCompanyRows ?: [['kind' => 'product', 'source_id' => '', 'quantity' => 1]]);
     $labelRows = old('items', $storedLabelRows ?: [['label_id' => '', 'other_label' => '', 'quantity' => 1, 'price' => '']]);
     $currencySymbol = config('santrains.currency_symbol', '€');
+    $selectedCompanyId = old('company_id', $transaction->company_id ?? null);
+    $showCompanyFields = $sourceType === 'company';
+    $showCustomerField = $isIncome && $showCompanyFields && filled($selectedCompanyId);
 @endphp
 
 @section('head')
@@ -121,9 +125,29 @@
                         @error('occurred_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
+                    <div class="form-floating">
+                        <select class="form-select @error('source_type') is-invalid @enderror" id="transaction_source" name="source_type" required>
+                            <option value="company" @selected($sourceType === 'company')>Company</option>
+                            <option value="personal" @selected($sourceType === 'personal')>Personal</option>
+                        </select>
+                        <label for="transaction_source">Company or Personal*</label>
+                        @error('source_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-floating {{ $showCompanyFields ? '' : 'd-none' }}" id="company-select-wrap">
+                        <select class="form-select @error('company_id') is-invalid @enderror" id="transaction_company" name="company_id"
+                                @if($showCompanyFields) required @else disabled @endif>
+                            <option value="">Select Company</option>
+                            @foreach($companies as $company)
+                                <option value="{{ $company->id }}" @selected((int) $selectedCompanyId === $company->id)>{{ $company->name }}</option>
+                            @endforeach
+                        </select>
+                        <label for="transaction_company">Company*</label>
+                        @error('company_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
                     @if($isIncome)
-                        <div class="form-floating">
-                            <select class="form-select @error('customer_id') is-invalid @enderror" id="transaction_customer" name="customer_id" required>
+                        <div class="form-floating {{ $showCustomerField ? '' : 'd-none' }}" id="customer-select-wrap">
+                            <select class="form-select @error('customer_id') is-invalid @enderror" id="transaction_customer" name="customer_id"
+                                    @if($showCustomerField) required @else disabled @endif>
                                 <option value="">Select Customer</option>
                                 @foreach($customers as $customer)
                                     <option value="{{ $customer->id }}" data-company="{{ $customer->company_id }}"
@@ -134,23 +158,6 @@
                             </select>
                             <label for="transaction_customer">Customer*</label>
                             @error('customer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="form-floating">
-                            <select class="form-select" id="transaction_source" name="source_type" required>
-                                <option value="company" @selected($sourceType === 'company')>Company</option>
-                                <option value="personal" @selected($sourceType === 'personal')>Personal</option>
-                            </select>
-                            <label for="transaction_source">Company or Personal*</label>
-                        </div>
-                        <div class="form-floating" id="company-select-wrap">
-                            <select class="form-select @error('company_id') is-invalid @enderror" id="transaction_company" name="company_id">
-                                <option value="">Select Company</option>
-                                @foreach($companies as $company)
-                                    <option value="{{ $company->id }}" @selected((int) old('company_id', $transaction->company_id ?? null) === $company->id)>{{ $company->name }}</option>
-                                @endforeach
-                            </select>
-                            <label for="transaction_company">Company*</label>
-                            @error('company_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     @endif
                 </div>
@@ -179,11 +186,11 @@
                     </section>
                 @endif
 
-                <section id="label-entry" class="grid-1 gap-card {{ $isIncome && $sourceType !== 'personal' ? 'd-none' : '' }}">
+                <section id="label-entry" class="grid-1 gap-card {{ $usesCompanyCatalog ? 'd-none' : '' }}">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                         <div>
                             <h5 class="hd-sm mb-0">{{ $isIncome ? 'Personal Items' : 'Expense Items' }}</h5>
-                            <span class="search-base">Choose a Label Master value or select Other to add a new label.</span>
+                            <span class="search-base">Choose an Account Master value or select Other to add a new account.</span>
                         </div>
                         <button class="btn-sm btn-sec" type="button" id="add-label-item"><i class="fa-solid fa-plus i-mr"></i>Add Item</button>
                     </div>
@@ -267,6 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const companyEntry = document.getElementById('company-entry');
     const labelEntry = document.getElementById('label-entry');
     const companyWrap = document.getElementById('company-select-wrap');
+    const customerWrap = document.getElementById('customer-select-wrap');
     const sendInvoiceEmail = document.getElementById('send_invoice_email');
     const transactionForm = document.getElementById('transaction-entry-form');
 
@@ -300,9 +308,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function refreshAllCompanyRows() {
         document.querySelectorAll('[data-company-row]').forEach(refreshCompanyRow);
         if (customerSelect && sourceSelect && sourceSelect.value === 'company') {
+            const company = companySelect?.value || '';
             Array.from(customerSelect.options).forEach(function (option, index) {
                 if (index === 0) return;
-                option.disabled = Boolean(companySelect.value) && option.dataset.company !== companySelect.value;
+                const allowed = Boolean(company) && option.dataset.company === company;
+                option.disabled = !allowed;
+                option.hidden = !allowed;
             });
             const selected = customerSelect.options[customerSelect.selectedIndex];
             if (selected && selected.disabled) customerSelect.value = '';
@@ -312,15 +323,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function toggleSource() {
         if (!sourceSelect) return;
         const companyMode = sourceSelect.value === 'company';
-        companyEntry.classList.toggle('d-none', !companyMode);
-        labelEntry.classList.toggle('d-none', companyMode);
-        companyWrap.classList.toggle('d-none', !companyMode);
-        companySelect.required = companyMode;
-        companySelect.disabled = !companyMode;
+        const hasCompany = Boolean(companySelect?.value);
+        companyEntry?.classList.toggle('d-none', !companyMode);
+        labelEntry?.classList.toggle('d-none', Boolean(companyEntry) && companyMode);
+        companyWrap?.classList.toggle('d-none', !companyMode);
+        customerWrap?.classList.toggle('d-none', !(companyMode && hasCompany));
+        if (companySelect) {
+            companySelect.required = companyMode;
+            companySelect.disabled = !companyMode;
+        }
+        if (customerSelect) {
+            customerSelect.required = companyMode && hasCompany;
+            customerSelect.disabled = !(companyMode && hasCompany);
+        }
         setControlsDisabled(companyEntry, !companyMode);
-        setControlsDisabled(labelEntry, companyMode);
+        setControlsDisabled(labelEntry, Boolean(companyEntry) && companyMode);
         if (!companyMode && sendInvoiceEmail) sendInvoiceEmail.checked = false;
-        Array.from(customerSelect.options).forEach(option => option.disabled = false);
+        if (customerSelect) {
+            Array.from(customerSelect.options).forEach(option => option.disabled = false);
+        }
         if (companyMode) refreshAllCompanyRows();
     }
 
@@ -345,6 +366,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    document.addEventListener('input', function (event) {
+        if (!event.target.matches('[data-integer-only]')) return;
+
+        const maxLength = event.target.maxLength > 0 ? event.target.maxLength : 9;
+        event.target.value = event.target.value.replace(/\D/g, '').slice(0, maxLength);
+    });
+
     document.addEventListener('click', function (event) {
         const button = event.target.closest('.remove-entry');
         if (!button) return;
@@ -354,9 +382,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     sourceSelect?.addEventListener('change', toggleSource);
-    companySelect?.addEventListener('change', refreshAllCompanyRows);
+    companySelect?.addEventListener('change', function () {
+        refreshAllCompanyRows();
+        toggleSource();
+    });
     customerSelect?.addEventListener('change', function () {
-        if (sourceSelect?.value === 'company') {
+        if (sourceSelect?.value === 'company' && companySelect) {
             const selected = this.options[this.selectedIndex];
             if (selected.dataset.company) {
                 companySelect.value = selected.dataset.company;

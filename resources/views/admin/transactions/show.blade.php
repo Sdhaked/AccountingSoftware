@@ -54,7 +54,7 @@
 
         <h5 class="hd-sm">Items</h5>
         <div class="table-responsive"><table class="table">
-            <thead><tr><th>Label</th><th>Quantity</th><th>Unit Price</th><th>Tax</th><th>Total</th></tr></thead>
+            <thead><tr><th>Account</th><th>Quantity</th><th>Unit Price</th><th>Tax</th><th>Total</th></tr></thead>
             <tbody>
             @foreach($transaction->items as $item)<tr>
                 <td>{{ $item->label }}</td><td>{{ rtrim(rtrim(number_format((float) $item->quantity, 3), '0'), '.') }}</td>

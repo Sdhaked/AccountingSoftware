@@ -15,7 +15,7 @@
             'permissions' => ['products-view-products', 'products-manage-products']],
         ['label' => 'Tax Classes', 'icon' => 'fa-percent', 'route' => route('admin.master-data.index', 'tax-classes'),
             'permissions' => ['tax-classes-view-tax-classes', 'tax-classes-manage-tax-classes']],
-        ['label' => 'Label Master', 'icon' => 'fa-tags', 'route' => route('admin.master-data.index', 'labels'),
+        ['label' => 'Account Master', 'icon' => 'fa-tags', 'route' => route('admin.master-data.index', 'labels'),
             'permissions' => ['labels-view-labels', 'labels-manage-labels']],
     ];
     $visibleAccountingLinks = collect($accountingLinks)->filter(fn ($link) => $canSeeSidebar($link['permissions']));

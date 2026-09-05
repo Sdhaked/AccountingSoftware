@@ -40,6 +40,8 @@
                                     @endif
                                 @elseif(($field['format'] ?? null) === 'percentage')
                                     {{ rtrim(rtrim(number_format((float) $value, 3), '0'), '.') }}%
+                                @elseif(isset($field['choices']))
+                                    {{ $field['choices'][$value] ?? 'N/A' }}
                                 @else
                                     {!! nl2br(e(filled($value) ? $value : 'N/A')) !!}
                                 @endif

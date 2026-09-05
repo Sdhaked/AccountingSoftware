@@ -9,10 +9,12 @@ use App\Models\Product;
 use App\Models\Role;
 use App\Models\TaxClass;
 use App\Models\User;
+use App\Services\TransactionReportExporter;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 uses(RefreshDatabase::class);
 
@@ -83,7 +85,7 @@ it('creates updates and deletes an income transaction', function () {
         ->and($transaction->items()->value('source_id'))->toBe($this->product->id);
     Mail::assertNothingSent();
 
-    $label = Label::create(['name' => 'Consulting']);
+    $label = Label::create(['type' => 'income', 'name' => 'Consulting']);
     $this->actingAs($this->user)->put(route('admin.transactions.update', $transaction), [
         'occurred_at' => '2026-08-17 11:00:00',
         'customer_id' => $this->customer->id,
@@ -108,12 +110,13 @@ it('creates updates and deletes an income transaction', function () {
     $this->assertDatabaseMissing('accounting_transactions', ['id' => $transaction->id]);
 });
 
-it('creates an expense transaction from label items', function () {
-    $label = Label::create(['name' => 'Office Rent']);
+it('creates an expense transaction from account items', function () {
+    $label = Label::create(['type' => 'expense', 'name' => 'Office Rent']);
 
     $response = $this->actingAs($this->user)
         ->post(route('admin.transactions.store', 'expense'), [
             'occurred_at' => '2026-08-18 09:15:00',
+            'source_type' => 'personal',
             'items' => [[
                 'label_id' => $label->id,
                 'price' => 350,
@@ -128,6 +131,116 @@ it('creates an expense transaction from label items', function () {
         ->and((float) $transaction->subtotal)->toBe(350.0)
         ->and((float) $transaction->total)->toBe(350.0)
         ->and($transaction->items()->value('label_id'))->toBe($label->id);
+});
+
+it('creates a company expense transaction from account items', function () {
+    $label = Label::create(['type' => 'expense', 'name' => 'Office Rent']);
+
+    $response = $this->actingAs($this->user)
+        ->post(route('admin.transactions.store', 'expense'), [
+            'occurred_at' => '2026-08-18 09:15:00',
+            'source_type' => 'company',
+            'company_id' => $this->company->id,
+            'items' => [[
+                'label_id' => $label->id,
+                'price' => 350,
+            ]],
+        ]);
+
+    $transaction = AccountingTransaction::where('type', 'expense')->firstOrFail();
+    $response->assertRedirect(route('admin.transactions.show', $transaction));
+
+    expect($transaction->source_type)->toBe('company')
+        ->and($transaction->company_id)->toBe($this->company->id)
+        ->and($transaction->customer_id)->toBeNull()
+        ->and($transaction->customer_name)->toBeNull()
+        ->and($transaction->issuer_name)->toBe($this->company->name)
+        ->and((float) $transaction->total)->toBe(350.0)
+        ->and($transaction->items()->value('label_id'))->toBe($label->id);
+});
+
+it('shows company or personal choice and account wording on the expense form', function () {
+    Label::create(['type' => 'expense', 'name' => 'Office Rent']);
+    Label::create(['type' => 'income', 'name' => 'Course Sales']);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.transactions.create', 'expense'))
+        ->assertOk()
+        ->assertSeeInOrder(['Date & Time*', 'Company or Personal*', 'Company*'])
+        ->assertSee('Company or Personal*')
+        ->assertSee('Select Company')
+        ->assertSee('Select Account')
+        ->assertSee('Office Rent')
+        ->assertDontSee('Course Sales')
+        ->assertSee('Choose an Account Master value or select Other to add a new account.')
+        ->assertDontSee('Customer*')
+        ->assertDontSee('Select Label')
+        ->assertDontSee('Choose a Label Master value');
+});
+
+it('creates a personal income transaction without selecting a customer', function () {
+    $label = Label::create(['type' => 'income', 'name' => 'Course Sales']);
+
+    $response = $this->actingAs($this->user)
+        ->post(route('admin.transactions.store', 'income'), [
+            'occurred_at' => '2026-08-18 09:15:00',
+            'source_type' => 'personal',
+            'items' => [[
+                'label_id' => $label->id,
+                'quantity' => 1,
+                'price' => 350,
+            ]],
+        ]);
+
+    $transaction = AccountingTransaction::where('type', 'income')->firstOrFail();
+    $response->assertRedirect(route('admin.transactions.show', $transaction));
+
+    expect($transaction->source_type)->toBe('personal')
+        ->and($transaction->company_id)->toBeNull()
+        ->and($transaction->customer_id)->toBeNull()
+        ->and($transaction->customer_name)->toBeNull()
+        ->and((float) $transaction->total)->toBe(350.0);
+});
+
+it('shows only income accounts on personal income entries', function () {
+    Label::create(['type' => 'income', 'name' => 'Course Sales']);
+    Label::create(['type' => 'expense', 'name' => 'Office Rent']);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.transactions.create', 'income'))
+        ->assertOk()
+        ->assertSee('Course Sales')
+        ->assertDontSee('Office Rent');
+});
+
+it('rejects decimal quantities for company income items', function () {
+    $payload = $this->companyIncomePayload;
+    $payload['company_items'][0]['quantity'] = '1.002';
+
+    $this->actingAs($this->user)
+        ->post(route('admin.transactions.store', 'income'), $payload)
+        ->assertSessionHasErrors(['company_items.0.quantity']);
+
+    $this->assertDatabaseCount('accounting_transactions', 0);
+});
+
+it('rejects decimal quantities for personal income items', function () {
+    $label = Label::create(['type' => 'income', 'name' => 'Consulting']);
+
+    $this->actingAs($this->user)
+        ->post(route('admin.transactions.store', 'income'), [
+            'occurred_at' => '2026-08-18 09:15:00',
+            'customer_id' => $this->customer->id,
+            'source_type' => 'personal',
+            'items' => [[
+                'label_id' => $label->id,
+                'quantity' => '1.002',
+                'price' => 350,
+            ]],
+        ])
+        ->assertSessionHasErrors(['items.0.quantity']);
+
+    $this->assertDatabaseCount('accounting_transactions', 0);
 });
 
 it('emails a company invoice only when requested and supports manual resend', function () {
@@ -194,6 +307,21 @@ it('downloads the transaction export as an Excel workbook', function () {
     expect($response->headers->get('content-disposition'))
         ->toContain('attachment; filename=income-expenditure-')
         ->toContain('.xlsx');
+
+    $path = app(TransactionReportExporter::class)->export([]);
+
+    try {
+        $sheet = IOFactory::load($path)->getActiveSheet();
+
+        expect($sheet->getCell('A4')->getValue())->toBe('MONTH')
+            ->and($sheet->getCell('B4')->getValue())->toBe('Ledger Package')
+            ->and($sheet->getCell('B5')->getValue())->toBe(242.0)
+            ->and($sheet->getCell('A6')->getValue())->toBe('TOTALS TO DATE');
+    } finally {
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
 });
 
 it('bulk deletes only entries matching every active filter and removes their files', function () {

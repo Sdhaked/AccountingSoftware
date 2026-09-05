@@ -42,6 +42,7 @@ return new class extends Migration
         Schema::create('services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->restrictOnDelete();
+            $table->foreignId('tax_class_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->decimal('default_rate', 14, 2);
             $table->timestamps();
@@ -51,7 +52,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->restrictOnDelete();
-            $table->foreignId('tax_class_id')->constrained()->restrictOnDelete();
+            $table->foreignId('tax_class_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->decimal('price', 14, 2);
             $table->timestamps();
@@ -60,6 +61,7 @@ return new class extends Migration
 
         Schema::create('labels', function (Blueprint $table) {
             $table->id();
+            $table->enum('type', ['income', 'expense'])->default('expense');
             $table->string('name')->unique();
             $table->timestamps();
         });

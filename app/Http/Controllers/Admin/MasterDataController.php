@@ -156,11 +156,13 @@ class MasterDataController extends Controller
             ],
             'services' => [
                 'title' => 'Service List', 'singular' => 'Service', 'model' => Service::class,
-                'with' => ['company'], 'search' => ['name'],
+                'with' => ['company', 'taxClass'], 'search' => ['name'],
                 'fields' => [
                     ['name' => 'name', 'label' => 'Service Name', 'type' => 'text', 'required' => true],
                     ['name' => 'default_rate', 'label' => 'Default Rate', 'type' => 'number', 'step' => '0.01',
                         'required' => true, 'format' => 'money'],
+                    ['name' => 'tax_class_id', 'label' => 'Tax Class', 'type' => 'select',
+                        'relation' => 'taxClass', 'option_model' => TaxClass::class, 'option_suffix' => 'percentage'],
                     ['name' => 'company_id', 'label' => 'Company', 'type' => 'select', 'required' => true,
                         'relation' => 'company', 'option_model' => Company::class],
                 ],
@@ -172,7 +174,7 @@ class MasterDataController extends Controller
                     ['name' => 'name', 'label' => 'Product Name', 'type' => 'text', 'required' => true],
                     ['name' => 'price', 'label' => 'Price', 'type' => 'number', 'step' => '0.01',
                         'required' => true, 'format' => 'money'],
-                    ['name' => 'tax_class_id', 'label' => 'Tax Class', 'type' => 'select', 'required' => true,
+                    ['name' => 'tax_class_id', 'label' => 'Tax Class', 'type' => 'select',
                         'relation' => 'taxClass', 'option_model' => TaxClass::class, 'option_suffix' => 'percentage'],
                     ['name' => 'company_id', 'label' => 'Company', 'type' => 'select', 'required' => true,
                         'relation' => 'company', 'option_model' => Company::class],
@@ -188,10 +190,12 @@ class MasterDataController extends Controller
                 ],
             ],
             'labels' => [
-                'title' => 'Label Master', 'singular' => 'Label', 'model' => Label::class,
+                'title' => 'Account Master', 'singular' => 'Account', 'model' => Label::class,
                 'with' => [], 'search' => ['name'],
                 'fields' => [
-                    ['name' => 'name', 'label' => 'Label Name', 'type' => 'text', 'required' => true],
+                    ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'required' => true,
+                        'choices' => ['income' => 'Income', 'expense' => 'Expense']],
+                    ['name' => 'name', 'label' => 'Account Name', 'type' => 'text', 'required' => true],
                 ],
             ],
         ];
@@ -235,13 +239,14 @@ class MasterDataController extends Controller
                 'name' => ['required', 'string', 'max:255', Rule::unique('services', 'name')
                     ->where(fn ($query) => $query->where('company_id', $request->input('company_id')))->ignore($record)],
                 'default_rate' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
+                'tax_class_id' => ['nullable', 'integer', 'exists:tax_classes,id'],
                 'company_id' => ['required', 'integer', 'exists:companies,id'],
             ],
             'products' => [
                 'name' => ['required', 'string', 'max:255', Rule::unique('products', 'name')
                     ->where(fn ($query) => $query->where('company_id', $request->input('company_id')))->ignore($record)],
                 'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
-                'tax_class_id' => ['required', 'integer', 'exists:tax_classes,id'],
+                'tax_class_id' => ['nullable', 'integer', 'exists:tax_classes,id'],
                 'company_id' => ['required', 'integer', 'exists:companies,id'],
             ],
             'tax-classes' => [
@@ -249,6 +254,7 @@ class MasterDataController extends Controller
                 'percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             ],
             'labels' => [
+                'type' => ['required', 'in:income,expense'],
                 'name' => ['required', 'string', 'max:255', $uniqueName('labels')],
             ],
             default => abort(404),

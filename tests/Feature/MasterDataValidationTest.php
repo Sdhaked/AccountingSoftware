@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Company;
+use App\Models\Product;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\User;
@@ -84,6 +85,55 @@ it('renders the services master data list', function () {
         ->assertOk()
         ->assertSee('Service List')
         ->assertSee('Manual Handling');
+});
+
+it('stores an account with an income or expense type', function () {
+    $this->actingAs($this->user)
+        ->post(route('admin.master-data.store', 'labels'), [
+            'type' => 'income',
+            'name' => 'Course Sales',
+        ])
+        ->assertRedirect(route('admin.master-data.index', 'labels'));
+
+    $this->assertDatabaseHas('labels', [
+        'type' => 'income',
+        'name' => 'Course Sales',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.master-data.index', 'labels'))
+        ->assertOk()
+        ->assertSee('Account Master')
+        ->assertSee('Type')
+        ->assertSee('Income')
+        ->assertSee('Course Sales');
+});
+
+it('stores services and products without requiring a tax class', function () {
+    $company = Company::create([
+        'name' => 'San Trains',
+        'address' => 'Dublin',
+        'email' => 'accounts@santrains.test',
+    ]);
+
+    $this->actingAs($this->user)
+        ->post(route('admin.master-data.store', 'services'), [
+            'name' => 'Manual Handling',
+            'default_rate' => 100,
+            'company_id' => $company->id,
+        ])
+        ->assertRedirect(route('admin.master-data.index', 'services'));
+
+    $this->actingAs($this->user)
+        ->post(route('admin.master-data.store', 'products'), [
+            'name' => 'Workbook',
+            'price' => 25,
+            'company_id' => $company->id,
+        ])
+        ->assertRedirect(route('admin.master-data.index', 'products'));
+
+    expect(Service::where('name', 'Manual Handling')->value('tax_class_id'))->toBeNull()
+        ->and(Product::where('name', 'Workbook')->value('tax_class_id'))->toBeNull();
 });
 
 it('renders a master data detail page', function () {

@@ -44,10 +44,9 @@ class TransactionReportExporter
         foreach ($headers as $index => $header) {
             $column = $index + 1;
             $sheet->setCellValue([$column, 4], $header);
-            $sheet->setCellValue([$column, 5], $column === 1 ? '' : $currencySymbol);
         }
 
-        $row = 6;
+        $row = 5;
         foreach ($months as $month => $monthTransactions) {
             $sheet->setCellValue([1, $row], \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel(
                 \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01')
@@ -73,7 +72,7 @@ class TransactionReportExporter
         $sheet->setCellValue([1, $totalRow], 'TOTALS TO DATE');
         for ($column = 2; $column <= $lastColumn; $column++) {
             $letter = Coordinate::stringFromColumnIndex($column);
-            $sheet->setCellValue([$column, $totalRow], "=SUM({$letter}6:{$letter}" . ($totalRow - 1) . ')');
+            $sheet->setCellValue([$column, $totalRow], "=SUM({$letter}5:{$letter}" . ($totalRow - 1) . ')');
         }
 
         $lastLetter = Coordinate::stringFromColumnIndex($lastColumn);
@@ -98,14 +97,14 @@ class TransactionReportExporter
         }
         $sheet->getStyle("A{$totalRow}:{$lastLetter}{$totalRow}")->getFill()
             ->setFillType('solid')->getStartColor()->setRGB('A9D18E');
-        $sheet->getStyle("A4:{$lastLetter}5")->getFont()->setBold(true);
+        $sheet->getStyle("A4:{$lastLetter}4")->getFont()->setBold(true);
         $sheet->getStyle("A{$totalRow}:{$lastLetter}{$totalRow}")->getFont()->setBold(true);
-        $sheet->getStyle("A6:A" . ($totalRow - 1))->getNumberFormat()->setFormatCode('mmm-yy');
-        $sheet->getStyle("B6:{$lastLetter}{$totalRow}")->getNumberFormat()
+        $sheet->getStyle("A5:A" . ($totalRow - 1))->getNumberFormat()->setFormatCode('mmm-yy');
+        $sheet->getStyle("B5:{$lastLetter}{$totalRow}")->getNumberFormat()
             ->setFormatCode($currencyFormat);
         $sheet->getStyle("A4:{$lastLetter}{$totalRow}")->getAlignment()
             ->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-        $sheet->freezePane('A6');
+        $sheet->freezePane('A5');
         $sheet->setAutoFilter("A4:{$lastLetter}4");
         $sheet->getColumnDimension('A')->setWidth(16);
         for ($column = 2; $column <= $lastColumn; $column++) {

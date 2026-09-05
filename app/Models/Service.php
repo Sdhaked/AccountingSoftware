@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Service extends Model
 {
-    protected $fillable = ['company_id', 'name', 'default_rate'];
+    protected $fillable = ['company_id', 'tax_class_id', 'name', 'default_rate'];
 
     protected function casts(): array
     {
@@ -17,5 +17,10 @@ class Service extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function taxClass(): BelongsTo
+    {
+        return $this->belongsTo(TaxClass::class);
     }
 }

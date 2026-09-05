@@ -2,6 +2,11 @@
     $row = $row ?? [];
     $selectedKind = $row['kind'] ?? 'product';
     $selectedSource = $row['source_id'] ?? '';
+    $quantityValue = $row['quantity'] ?? 1;
+    $quantityValue = is_numeric($quantityValue)
+        ? (string) (int) $quantityValue
+        : preg_replace('/\D/', '', (string) $quantityValue);
+    $quantityValue = $quantityValue === '' ? 1 : $quantityValue;
     $currencySymbol = config('santrains.currency_symbol', '€');
 @endphp
 <div class="create-event-form-box company-item-row" data-company-row>
@@ -18,14 +23,14 @@
                 <option value="">Select Item</option>
                 @foreach($products as $product)
                     <option value="{{ $product->id }}" data-kind="product" data-company="{{ $product->company_id }}"
-                            data-price="{{ $product->price }}" data-tax="{{ $product->taxClass->percentage }}"
+                            data-price="{{ $product->price }}" data-tax="{{ $product->taxClass?->percentage ?? 0 }}"
                             @selected((string) $selectedSource === (string) $product->id && $selectedKind === 'product')>
                         {{ $product->name }} - {{ $currencySymbol }}{{ number_format((float) $product->price, 2) }}
                     </option>
                 @endforeach
                 @foreach($services as $service)
                     <option value="{{ $service->id }}" data-kind="service" data-company="{{ $service->company_id }}"
-                            data-price="{{ $service->default_rate }}" data-tax="0"
+                            data-price="{{ $service->default_rate }}" data-tax="{{ $service->taxClass?->percentage ?? 0 }}"
                             @selected((string) $selectedSource === (string) $service->id && $selectedKind === 'service')>
                         {{ $service->name }} - {{ $currencySymbol }}{{ number_format((float) $service->default_rate, 2) }}
                     </option>
@@ -34,8 +39,8 @@
             <label>Product / Service*</label>
         </div>
         <div class="form-floating">
-            <input class="form-control" type="number" min="0.001" step="0.001"
-                   name="company_items[{{ $index }}][quantity]" value="{{ $row['quantity'] ?? 1 }}" required>
+            <input class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="9"
+                   name="company_items[{{ $index }}][quantity]" value="{{ $quantityValue }}" data-integer-only required>
             <label>Quantity*</label>
         </div>
         <div class="d-flex align-items-center justify-content-between gap-2">

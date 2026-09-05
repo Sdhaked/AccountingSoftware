@@ -58,14 +58,20 @@
                                             class="form-select @error($field['name']) is-invalid @enderror"
                                             @required($field['required'] ?? false)>
                                         <option value="">Select {{ $field['label'] }}</option>
-                                        @foreach($field['options'] as $option)
-                                            <option value="{{ $option->id }}" @selected((int) $value === $option->id)>
-                                                {{ $option->name }}
-                                                @if(isset($field['option_suffix']))
-                                                    ({{ rtrim(rtrim(number_format((float) data_get($option, $field['option_suffix']), 3), '0'), '.') }}%)
-                                                @endif
-                                            </option>
-                                        @endforeach
+                                        @if(isset($field['choices']))
+                                            @foreach($field['choices'] as $choiceValue => $choiceLabel)
+                                                <option value="{{ $choiceValue }}" @selected((string) $value === (string) $choiceValue)>{{ $choiceLabel }}</option>
+                                            @endforeach
+                                        @else
+                                            @foreach($field['options'] as $option)
+                                                <option value="{{ $option->id }}" @selected((int) $value === $option->id)>
+                                                    {{ $option->name }}
+                                                    @if(isset($field['option_suffix']))
+                                                        ({{ rtrim(rtrim(number_format((float) data_get($option, $field['option_suffix']), 3), '0'), '.') }}%)
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        @endif
                                     </select>
                                 @else
                                     <input type="{{ $field['type'] }}" name="{{ $field['name'] }}" id="field_{{ $field['name'] }}"
